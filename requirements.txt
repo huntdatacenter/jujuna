@@ -1,7 +1,6 @@
 pip>=10
 pyyaml
-# xenial comes with python3.5 which is on 3.5.2-2ubuntu0~16.04.4 should work
-async-timeout==2.0.1  # until xenial updates from python 3.5.1 to python 3.5.2 at least, then use 3.0.0
+async-timeout==2.0.1
 tox>=3.3
 juju>=0.10.2
 argcomplete
