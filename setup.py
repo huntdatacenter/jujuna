@@ -6,9 +6,8 @@ readme = here / 'README.md'
 changelog = here / 'CHANGELOG'
 reqs_file = here / 'requirements.txt'
 
-with open(reqs_file) as f:
-    reqs = [line for line in f.read().splitlines()
-            if not line.startswith('--')]
+reqs = [line for line in reqs_file.read_text().strip().splitlines()
+        if not line.startswith('--')]
 version = here / 'VERSION'
 
 SETUP = {
