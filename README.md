@@ -1,7 +1,5 @@
 # Jujuna
 
-![build status](https://gitlab.com/huntgenes/jujuna/badges/master/build.svg)
-
 Continuous deployment, upgrade and testing for Juju.
 
 Maintaining OpenStack deployment is a demanding task. Considerably frequent releases can cause some pain even when using Juju. It is therefore advised to test new releases and upgrade scenarios on a separate but somewhat similar infrastructures in order to discover any issues before doing upgrade on production.
