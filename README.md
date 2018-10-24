@@ -1,5 +1,7 @@
 # Jujuna
 
+[![Documentation Status](https://readthedocs.org/projects/jujuna/badge/?version=latest)](https://jujuna.readthedocs.io/en/latest/?badge=latest)
+
 Continuous deployment, upgrade and testing for Juju.
 
 Maintaining OpenStack deployment is a demanding task. Considerably frequent releases can cause some pain even when using Juju. It is therefore advised to test new releases and upgrade scenarios on a separate but somewhat similar infrastructures in order to discover any issues before doing upgrade on production.
@@ -15,7 +17,7 @@ apt install libssl-dev
 pip3 install .
 ```
 
-Run command `jujuna --help` to get the help menu.
+Run command `jujuna --help` to get the help menu. You can also check the usage in [the documentation](https://jujuna.readthedocs.io/en/latest/usage.html).
 
 ## Usage
 
