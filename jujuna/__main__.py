@@ -137,7 +137,7 @@ async def run_action(action, timeout, args):
         try:
             async with async_timeout.timeout(timeout) as at:
                 return await selected_action(**vars(args))
-        except Exception as e:
+        except Exception:
             # Exit with timeout code if expired
             if at and at.expired:
                 logger.warn('Operation timed out!')
