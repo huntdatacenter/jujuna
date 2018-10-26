@@ -10,4 +10,4 @@ install:
   - pip install -q pytest flake8 pip>=10 tox-travis
 # command to run tests
 script:
-  - tox -e py35 -e py36 -e py37 -e lint
+  - tox
