@@ -2,10 +2,13 @@ import asyncio
 import logging
 import websockets
 import async_timeout
+
 from collections import defaultdict
-from juju.errors import JujuError
+
 from jujuna.helper import cs_name_parse, connect_juju
 from jujuna.settings import ORIGIN_KEYS, SERVICES
+
+from juju.errors import JujuError
 
 
 # create logger
@@ -67,58 +70,8 @@ async def upgrade(
             log.info('Apps not specified, using default upgrade configuration: {}'.format(SERVICES))
             apps = SERVICES
 
-        upgraded = []
-        latest_charms = []
-
-        for app_name in apps:
-            if app_name not in model.applications:
-                log.warn('Unable to find application: {}'.format(app_name))
-                continue
-
-            # Get charm url and parse current revision
-            charm_url = model.applications[app_name].data['charm-url']
-            parse = cs_name_parse(charm_url)
-
-            # Charmstore get latest revision
-            try:
-                charmstore_entity = await model.charmstore.entity(charm_url, include_stats=False)
-                latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
-                latest_revision = cs_name_parse(latest)
-                attemp_update = False
-            except Exception:
-                log.warn('Failed loading information from charmstore: {}'.format(charm_url))
-                latest_revision = {'revision': 0}
-                attemp_update = True
-
-            # Update if not newest or attempt to update if failed to find charmstore latest revision
-            if (
-                not upgrade_only and
-                parse['revision'] < latest_revision['revision'] or
-                attemp_update
-            ):
-                log.info('Upgrade {} from: {} to: {}'.format(app_name, parse['revision'], latest_revision['revision']))
-                try:
-                    if not dry_run:
-                        await model.applications[app_name].upgrade_charm()
-                        await asyncio.sleep(30)
-                    upgraded.append(app_name)
-                except JujuError:
-                    log.warn('Not upgrading: {}'.format(app_name))
-            else:
-                latest_charms.append(app_name)
-
-        log.info('Upgraded: {} charms'.format(len(upgraded)))
-
-        await wait_until(
-            model,
-            model.applications.values(),
-            timeout=1800,
-            loop=model.loop
-        )
-
-        log.info('Collecting final workload status')
-        if not dry_run and upgraded:
-            await asyncio.sleep(30)
+        # Upgrade charm revisions
+        upgraded, latest_charms = await upgrade_charms(apps, model, dry_run, upgrade_only)
 
         if charms_only:
             upgraded = []
@@ -198,6 +151,74 @@ async def upgrade(
     finally:
         await model.disconnect()
         await controller.disconnect()
+
+
+async def upgrade_charms(model, apps, upgrade_only, dry_run):
+    """Upgrade charm revisions in the model.
+
+    Listed apps will be checked for new revisions in charmstore
+    and upgraded to latest revision if available.
+
+    :param model_name: juju model name or uuid
+    :param apps: ordered list of application names
+    :param origin: target openstack version string
+    :param upgrade_only: boolean
+    :param dry_run: boolean
+    """
+    upgraded = []
+    latest_charms = []
+
+    for app_name in apps:
+        if app_name not in model.applications:
+            log.warn('Unable to find application: {}'.format(app_name))
+            continue
+
+        # Get charm url and parse current revision
+        charm_url = model.applications[app_name].data['charm-url']
+        parse = cs_name_parse(charm_url)
+
+        # Charmstore get latest revision
+        try:
+            charmstore_entity = await model.charmstore.entity(charm_url, include_stats=False)
+            latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
+            latest_revision = cs_name_parse(latest)
+            attemp_update = False
+        except Exception:
+            log.warn('Failed loading information from charmstore: {}'.format(charm_url))
+            latest_revision = {'revision': 0}
+            attemp_update = True
+
+        # Update if not newest or attempt to update if failed to find charmstore latest revision
+        if (
+            not upgrade_only and
+            parse['revision'] < latest_revision['revision'] or
+            attemp_update
+        ):
+            log.info('Upgrade {} from: {} to: {}'.format(app_name, parse['revision'], latest_revision['revision']))
+            try:
+                if not dry_run:
+                    await model.applications[app_name].upgrade_charm()
+                    await asyncio.sleep(30)
+                upgraded.append(app_name)
+            except JujuError:
+                log.warn('Not upgrading: {}'.format(app_name))
+        else:
+            latest_charms.append(app_name)
+
+    log.info('Upgraded: {} charms'.format(len(upgraded)))
+
+    await wait_until(
+        model,
+        model.applications.values(),
+        timeout=1800,
+        loop=model.loop
+    )
+
+    log.info('Collecting final workload status')
+    if not dry_run and upgraded:
+        await asyncio.sleep(30)
+
+    return upgraded, latest_charms
 
 
 async def wait_until(model, apps, log_time=10, timeout=None, wait_period=0.5, loop=None):
@@ -298,20 +319,24 @@ async def enumerate_actions(application):
 
 
 async def order_units(name, units):
-    """Enumerate available actions for the applications.
+    """Determing order of units.
 
-    Returns a list of actions.
+    Returns a list of units beginning with leader.
 
-    :param application: juju application
+    :param name: string
+    :param units: list of juju units
     """
-    log.info('Determining ordering for service: %s' % name)
+    log.info('Determining ordering for service: {}'.format(name))
     ordered = []
 
     is_leader_data = []
     for unit in units:
         is_leader_data.append(await unit.run('is-leader'))
 
-    leader_info = filter(lambda u: u.data['results']['Stdout'].strip() == 'True', is_leader_data)
+    leader_info = filter(
+        lambda u: u.data['results']['Stdout'].strip() == 'True',
+        is_leader_data
+    )
     leader_unit = [x.data['receiver'] for x in leader_info][0]
 
     for unit in units:
@@ -320,7 +345,10 @@ async def order_units(name, units):
         else:
             ordered.append(unit)
 
-    log.info('Upgrade order is: %s' % [unit.name for unit in ordered])
+    log.info('Upgrade order is: {} Leader: {}'.format(
+        ', '.join([unit.name for unit in ordered]),
+        leader_unit
+    ))
     return ordered
 
 
