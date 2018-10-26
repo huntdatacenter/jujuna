@@ -85,7 +85,7 @@ async def upgrade(
                 latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
                 latest_revision = cs_name_parse(latest)
                 attemp_update = False
-            except Exception as e:
+            except Exception:
                 log.warn('Failed loading information from charmstore: {}'.format(charm_url))
                 latest_revision = {'revision': 0}
                 attemp_update = True
