@@ -1,6 +1,6 @@
 # Jujuna
 
-[![Build Status](https://travis-ci.org/huntdatacenter/jujuna.svg?branch=master)]
+[![Build Status](https://travis-ci.org/huntdatacenter/jujuna.svg?branch=master)](https://travis-ci.org/huntdatacenter/jujuna)
 [![Documentation Status](https://readthedocs.org/projects/jujuna/badge/?version=latest)](https://jujuna.readthedocs.io/en/latest/?badge=latest)
 
 Continuous deployment, upgrade and testing for Juju.
