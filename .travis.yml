@@ -1,0 +1,13 @@
+sudo: false
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+# commands to install dependencies
+install:
+  - pip install -r requirements.txt
+  - pip install -q pytest flake8 pip>=10 tox-travis
+# command to run tests
+script:
+  - tox -e py35 -e py36 -e py37 -e lint
