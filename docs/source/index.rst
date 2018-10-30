@@ -31,7 +31,7 @@ To install Jujuna, open an interactive shell and run:
 
 .. code::
 
-    pip3 install https://github.com/huntdatacenter/jujuna.git
+    pip3 install jujuna
 
 .. note::
 
