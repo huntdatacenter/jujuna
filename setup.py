@@ -3,11 +3,6 @@ from setuptools import setup, find_packages
 
 here = Path(__file__).absolute().parent
 readme = here / 'README.md'
-changelog = here / 'CHANGELOG'
-reqs_file = here / 'requirements.txt'
-
-reqs = [line for line in reqs_file.read_text().strip().splitlines()
-        if not line.startswith('--')]
 version = here / 'VERSION'
 
 SETUP = {
@@ -20,7 +15,8 @@ SETUP = {
     'maintainer': 'HUNT Data Center',
     'maintainer_email': 'cloud@hunt.ntnu.no',
     'url': "https://github.com/huntdatacenter/jujuna",
-    'long_description': open('README.md').read(),
+    'long_description': readme.read_test().strip(),
+    'long_description_content_type': 'text/markdown',
     'entry_points': {
         'console_scripts': [
             # Script invokation:
@@ -37,7 +33,12 @@ SETUP = {
         "Operating System :: POSIX :: Linux",
         "Environment :: Console"
     ],
-    'install_requires': reqs,
+    'install_requires': [
+        'pyyaml',
+        'async-timeout==2.0.1',
+        'juju>=0.10.2',
+        'argcomplete'
+    ],
 }
 
 

@@ -14,9 +14,10 @@ Using Jujuna in your CI pipeline enables you to automate deployment and upgrade 
 Easy to install using:
 
 ```
-apt install libssl-dev
-pip3 install .
+pip3 install jujuna
 ```
+
+May require installation of `libssl-dev` package or equivalent if not present in the system.
 
 Run command `jujuna --help` to get the help menu. You can also check the usage in [the documentation](https://jujuna.readthedocs.io/en/latest/usage.html).
 
