@@ -71,12 +71,7 @@ async def upgrade(
             apps = SERVICES
 
         # Upgrade charm revisions
-        upgraded, latest_charms = await upgrade_charms(apps, model, dry_run, upgrade_only)
-
-        if charms_only:
-            upgraded = []
-        else:
-            upgraded = apps
+        upgraded, latest_charms = await upgrade_charms(model, apps, upgrade_only, dry_run)
 
         wss = defaultdict(int)
         wsm = defaultdict(int)
@@ -85,64 +80,24 @@ async def upgrade(
                 wss[unit.workload_status] += 1
                 if 'ready' not in unit.workload_status_message:
                     wsm[unit.workload_status_message] += 1
-        log.info('Status of units after upgrade: {}'.format(dict(wss)))
+        log.info('Status of units after revision upgrade: {}'.format(dict(wss)))
         log.info('Workload messages: {}'.format(dict(wsm)))
 
         if not ignore_errors and 'error' in wss.keys():
             raise Exception('Errors during upgrading charms to latest revision')
 
-        if upgraded and origin == 'cloud:xenial-ocata' and 'nova-compute' in apps and 'cinder-warmceph' in apps:
-            log.info('Adding relation between nova-compute:ceph-access and cinder-warmceph:ceph-access')
-            if not dry_run:
-                try:
-                    await model.add_relation('nova-compute:ceph-access', 'cinder-warmceph:ceph-access')
-                    # TODO add completion check
-                    await asyncio.sleep(120)
-                    log.info('Completed addition of relation')
-                except Exception as e:
-                    if 'already exists' not in str(e):
-                        raise e
-                    else:
-                        log.warn('Ignored: relation already exists')
+        # Ocata upgrade requires additional relation to succeed
+        if not charms_only and origin == 'cloud:xenial-ocata' and 'nova-compute' in apps:
+            if 'cinder-warmceph' in apps:
+                await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-warmceph')
+            elif 'cinder-ceph' in apps:
+                await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-ceph')
 
-            await wait_until(
-                model,
-                model.applications.values(),
-                timeout=1800,
-                loop=model.loop
-            )
+        # Upgrade services
+        if not charms_only:
+            await upgrade_services(model, upgraded, origin, pause, dry_run)
 
-        log.info('Charms with latest revision: {}'.format(', '.join(latest_charms) if latest_charms else 'None'))
-
-        log.info('Upgrading services')
-
-        s_upgrade = 0
-        for app_name in upgraded:
-            if await is_rollable(model.applications[app_name]):
-                await perform_rolling_upgrade(
-                    model.applications[app_name],
-                    origin=origin,
-                    pause=pause,
-                    dry_run=dry_run
-                )
-                s_upgrade += 1
-            else:
-                await perform_bigbang_upgrade(
-                    model.applications[app_name],
-                    origin=origin,
-                    dry_run=dry_run
-                )
-                s_upgrade += 1
-
-        await wait_until(
-            model,
-            model.applications.values(),
-            timeout=1800,
-            loop=model.loop
-        )
-
-        log.info('Upgrade finished ({} upgraded services)'.format(s_upgrade))
-
+        # Log status values
         d = defaultdict(int)
         for a in model.applications.values():
             d[a.status] += 1
@@ -151,6 +106,60 @@ async def upgrade(
     finally:
         await model.disconnect()
         await controller.disconnect()
+
+
+async def ocata_relation_patch(model, dry_run, cinder_ceph):
+    cinder_ceph_rel = '{}:ceph-access'.format(cinder_ceph)
+    log.info('Adding relation between nova-compute:ceph-access and {}'.format(cinder_ceph_rel))
+    if not dry_run:
+        try:
+            await model.add_relation('nova-compute:ceph-access', cinder_ceph_rel)
+            # TODO add completion check
+            await asyncio.sleep(120)
+            log.info('Completed addition of relation')
+        except Exception as e:
+            if 'already exists' not in str(e):
+                raise e
+            else:
+                log.warn('Ignored: relation already exists')
+
+    await wait_until(
+        model,
+        model.applications.values(),
+        timeout=1800,
+        loop=model.loop
+    )
+
+
+async def upgrade_services(model, upgraded, origin, pause, dry_run):
+    log.info('Upgrading services')
+
+    s_upgrade = 0
+    for app_name in upgraded:
+        if await is_rollable(model.applications[app_name]):
+            await perform_rolling_upgrade(
+                model.applications[app_name],
+                origin=origin,
+                pause=pause,
+                dry_run=dry_run
+            )
+            s_upgrade += 1
+        else:
+            await perform_bigbang_upgrade(
+                model.applications[app_name],
+                origin=origin,
+                dry_run=dry_run
+            )
+            s_upgrade += 1
+
+    await wait_until(
+        model,
+        model.applications.values(),
+        timeout=1800,
+        loop=model.loop
+    )
+
+    log.info('Upgrade finished ({} upgraded services)'.format(s_upgrade))
 
 
 async def upgrade_charms(model, apps, upgrade_only, dry_run):
@@ -450,6 +459,7 @@ async def perform_bigbang_upgrade(application, dry_run=False, pause=False, origi
             log.info('Skipping upgrade for service: {}'.format(application.name))
             return
 
+        log.info('Set {} config {}={}'.format(application.name, config_key, origin))
         await application.set_config({config_key: origin})
         await asyncio.sleep(15)
 
