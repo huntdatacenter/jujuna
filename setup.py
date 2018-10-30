@@ -15,7 +15,7 @@ SETUP = {
     'maintainer': 'HUNT Data Center',
     'maintainer_email': 'cloud@hunt.ntnu.no',
     'url': "https://github.com/huntdatacenter/jujuna",
-    'long_description': readme.read_test().strip(),
+    'long_description': readme.read_text().strip(),
     'long_description_content_type': 'text/markdown',
     'entry_points': {
         'console_scripts': [
