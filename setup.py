@@ -7,6 +7,7 @@ version = here / 'VERSION'
 
 SETUP = {
     'name': "jujuna",
+    'description': 'Continuous deployment, upgrade and testing for Juju.',
     'packages': find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     'version': version.read_text().strip(),
