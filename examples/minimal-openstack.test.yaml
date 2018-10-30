@@ -1,0 +1,9 @@
+keystone:
+  service:
+    apache2:
+      status: 'running'
+  file:
+    '/etc/keystone/keystone.conf':
+      st_uid: 112
+      st_gid: 116
+      is_reg: True

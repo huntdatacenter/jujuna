@@ -1,0 +1,111 @@
+- hosts: all
+  become: yes
+
+  vars:
+    user: vagrant
+    group: vagrant
+
+  tasks:
+    - name: Add aliases to .bashrc
+      blockinfile:
+        path: "/home/{{ user }}/.bashrc"
+        content: |
+          # Add alias for easy watching of juju status
+          alias watch-juju='watch --color -n1 juju status --color'
+          # Add snaps to path
+          export PATH=/snap/bin:$PATH
+
+    - name: Install packages
+      apt:
+        name: ["zfsutils-linux", "apt-cacher-ng", "python3"]
+        state: latest
+
+    - name: Check to see if pip3 is already installed.
+      command: "pip3 --version"
+      ignore_errors: true
+      changed_when: false # read-only task
+      check_mode: no
+      register: pip3_is_installed
+
+    - name: Download get-pip.py.
+      get_url: url=https://bootstrap.pypa.io/get-pip.py dest=/tmp/get-pip.py
+      when: pip3_is_installed.rc != 0
+
+    - name: Install pip3.
+      command: "python3 /tmp/get-pip.py"
+      become: yes
+      when: pip3_is_installed.rc != 0
+
+    - name: Delete get-pip.py.
+      file: state=absent path=/tmp/get-pip.py
+      when: pip3_is_installed.rc != 0
+
+    - name: Install jujuna
+      pip:
+        name: jujuna
+        executable: pip3
+
+    - name: Add juju stable repo
+      apt_repository:
+        repo: ppa:juju/stable
+        state: present
+
+    - name: Enable passthrough for apt-cacher-ng for https
+      lineinfile:
+        path: /etc/apt-cacher-ng/acng.conf
+        line: 'PassThroughPattern: .*'
+
+    - name: Restart apt-cacher-ng server
+      service:
+        name: apt-cacher-ng
+        state: restarted
+
+    - name: Install LXD
+      apt:
+        name: ["lxd", "lxd-client"]
+        state: latest
+        default_release: xenial-backports
+
+    - name: Install juju snap
+      command: snap install juju --classic
+
+    - name: Install charm snap
+      command: snap install charm --classic
+
+    # Setup LXD
+    - name: Setup LXD
+      command: "{{ item }}"
+      with_items:
+        - lxd init --auto --storage-backend zfs --storage-create-loop 30 --storage-pool lxd
+        # - lxc network create lxdbr0
+        # - lxc network attach-profile lxdbr0 default eth0
+        - lxc network set lxdbr0 ipv6.address none
+      ignore_errors: yes
+
+    # Setup Juju
+    - name: Run juju to generate juju dir
+      command: /snap/bin/juju
+      become_user: "{{ user }}"
+      args:
+        creates: ~/.local/share/juju
+
+    - name: Add apt proxy to juju lxd cloud config
+      blockinfile:
+        path: "/home/{{ user }}/.local/share/juju/clouds.yaml"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: 0600
+        create: yes
+        content: |
+          clouds:
+            lxd:
+              type: lxd
+              config:
+                apt-http-proxy: http://{{ ansible_default_ipv4.address }}:3142
+                apt-https-proxy: http://{{ ansible_default_ipv4.address }}:3142
+                enable-os-upgrade: false
+
+    - name: Bootstrap Juju LXD controller
+      command: juju bootstrap lxd
+      become: yes
+      become_user: vagrant
