@@ -10,11 +10,13 @@ have one, you can try our vagrant configuration.
 I have Juju Controller
 ----------------------
 
-First you deploy the Openstack bundle, with older version of keystone (Newton)::
+First you deploy the Openstack bundle, with older version of keystone
+(Newton)::
 
   jujuna deploy minimal-openstack.bundle.yaml -w
 
-When deploy is done, you can try upgrading Keystone to the next version (Ocata)::
+When deploy is done, you can try upgrading Keystone to the next version
+(Ocata)::
 
   jujuna upgrade -o cloud:xenial-ocata -p -a keystone
 
@@ -49,7 +51,8 @@ older version of keystone (Newton)::
 
   jujuna deploy /vagrant/minimal-openstack.bundle.yaml -w
 
-When deploy is done, you can try upgrading Keystone to the next version (Ocata)::
+When deploy is done, you can try upgrading Keystone to the next version
+(Ocata)::
 
   jujuna upgrade -o cloud:xenial-ocata -p -a keystone
 
