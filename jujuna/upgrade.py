@@ -95,7 +95,7 @@ async def upgrade(
 
         # Upgrade services
         if not charms_only:
-            await upgrade_services(model, upgraded, origin, pause, dry_run)
+            await upgrade_services(model, apps, origin, pause, dry_run)
 
         # Log status values
         d = defaultdict(int)

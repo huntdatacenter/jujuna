@@ -44,6 +44,7 @@ To install Jujuna, open an interactive shell and run:
    :maxdepth: 2
 
    usage
+   examples
    scenarios
    test_writing
 
