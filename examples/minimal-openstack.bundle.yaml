@@ -1,0 +1,21 @@
+variables:
+  # sources
+  openstack-origin: &openstack_origin                             'cloud:xenial-newton'
+  source: &source                                                 'cloud:xenial-newton'
+services:
+  keystone:
+    charm: 'cs:keystone-264'
+    num_units: 3
+    options:
+      admin-password: test-admin-pass-432
+      admin-token: test-admin-token-876
+      openstack-origin: *openstack_origin
+    expose: true
+    series: xenial
+  percona-cluster:
+    charm: 'cs:percona-cluster-270'
+    num_units: 1
+    series: xenial
+relations:
+  - - 'percona-cluster:shared-db'
+    - 'keystone:shared-db'
