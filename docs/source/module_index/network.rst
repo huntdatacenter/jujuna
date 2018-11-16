@@ -1,7 +1,8 @@
 Network module
 =================
 
-Network exporter is sourcing `/proc/net/tcp` for information about interfaces and ports attached.
+Network exporter is sourcing `/proc/net/tcp` for information about interfaces
+and ports attached.
 
 Notation
 --------
