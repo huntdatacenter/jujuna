@@ -46,7 +46,7 @@ To install Jujuna, open an interactive shell and run:
    usage
    examples
    scenarios
-   test_writing
+   test_writing/index
 
 .. toctree::
    :maxdepth: 2
