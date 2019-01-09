@@ -20,9 +20,13 @@ based tool from Canonical to easily deploy and manage applications (called
 Charms) on different clouds and environments (see
 `how it works <https://jujucharms.com/how-it-works>`_ for more details).
 
-Using Jujuna in your CI pipeline enables you to automate deployment and upgrade
-scenarios and run specific tests.
-
+Jujuna validates OpenStack upgrades from a specific Juju bundle to a new
+predefined set of charm revisions and software versions. First, Jujuna
+automates the deployment of a specific OpenStack Juju bundle into a testing
+stack. Next, it automates the upgrade process to a new set of specific software
+versions, including rolling upgrade of HA configurations. Then, it validates
+the infrastructure status during and after the deployment. Finally, it can
+clean up the deployment.
 
 Quickstart
 ==========
