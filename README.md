@@ -10,8 +10,6 @@ At [HUNT Cloud](https://www.ntnu.edu/huntgenes/hunt-cloud) we run our scientific
 
 New to [Juju](https://jujucharms.com/)? Juju is a cool controller and agent based tool from Canonical to easily deploy and manage applications (called Charms) on different clouds and environments (see [how it works](https://jujucharms.com/how-it-works) for more details).
 
-Using Jujuna in your CI pipeline enables you to automate deployment and upgrade scenarios and run specific tests.
-
 ## Installation
 
 Easy to install using:
