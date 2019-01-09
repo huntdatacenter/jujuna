@@ -9,11 +9,16 @@ Welcome to Jujuna's documentation!
 Continuous integration of Juju bundles that provides deployment, upgrade and
 testing options.
 
-Maintaining OpenStack deployment is a demanding task. Considerably frequent
-releases can cause some pain even when using Juju. It is therefore advised
-to test new releases and upgrade scenarios on a separate but somewhat similar
-infrastructures in order to discover any issues before undergoing upgrade
-of production services.
+At `HUNT Cloud <https://www.ntnu.edu/huntgenes/hunt-cloud>`_, we run our
+scientific services based on OpenStack orchestrated by Juju. Such cloud
+deployments rely on a large set of collaborative softwares, and upgrades can
+sometimes cause considerable pain. We are therefore introducing Jujuna - a tool
+to simplify the validation of Juju-based OpenStack upgrades.
+
+New to `Juju <https://jujucharms.com/>`_? Juju is a cool controller and agent
+based tool from Canonical to easily deploy and manage applications (called
+Charms) on different clouds and environments (see
+`how it works <https://jujucharms.com/how-it-works>`_ for more details).
 
 Using Jujuna in your CI pipeline enables you to automate deployment and upgrade
 scenarios and run specific tests.
@@ -45,7 +50,7 @@ To install Jujuna, open an interactive shell and run:
 
    usage
    examples
-   scenarios
+   usecases
    test_writing/index
 
 .. toctree::
