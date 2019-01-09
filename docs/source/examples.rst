@@ -66,4 +66,4 @@ the model and remove all the applications::
 
   jujuna clean -w
 
-When you are done with testing you can `exit` the
+When you are done with testing you can `exit` the vagrant.
