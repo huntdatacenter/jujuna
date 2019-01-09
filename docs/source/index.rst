@@ -6,9 +6,6 @@
 Welcome to Jujuna's documentation!
 ==================================
 
-Continuous integration of Juju bundles that provides deployment, upgrade and
-testing options.
-
 At `HUNT Cloud <https://www.ntnu.edu/huntgenes/hunt-cloud>`_, we run our
 scientific services based on OpenStack orchestrated by Juju. Such cloud
 deployments rely on a large set of collaborative softwares, and upgrades can
