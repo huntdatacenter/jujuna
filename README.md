@@ -41,6 +41,8 @@ jujuna clean -m test-cloud -w -f -t 1800
 
 ```
 
+If you don't have any bundle or just need to try jujuna with some simple example, you can follow our [example guide](https://jujuna.readthedocs.io/en/latest/examples.html).
+
 ## Testing Jujuna
 
 How to make sure jujuna and your feature works before pushing out new version.
