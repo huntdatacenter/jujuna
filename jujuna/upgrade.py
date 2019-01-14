@@ -188,7 +188,11 @@ async def upgrade_charms(model, apps, upgrade_only, dry_run):
 
         # Charmstore get latest revision
         try:
-            charmstore_entity = await model.charmstore.entity(charm_url, include_stats=False)
+            charmstore_entity = await model.charmstore.entity(
+                charm_url,
+                include_stats=False,
+                includes=['revision-info']
+            )
             latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
             latest_revision = cs_name_parse(latest)
             attemp_update = False

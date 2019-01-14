@@ -38,7 +38,8 @@ SETUP = {
         'pyyaml',
         'async-timeout==2.0.1',
         'juju>=0.10.2',
-        'argcomplete'
+        'argcomplete',
+        'theblues>=0.5.1'
     ],
 }
 
