@@ -1,0 +1,65 @@
+---
+origin_keys:
+  ceph: source
+  ceph-mon: source
+  ceph-osd: source
+  ceph-radosgw: source
+
+services:
+  # Ceph
+  - 'ceph-mon'
+  - 'ceph-mon-nrpe'
+  - 'ceph-osd'
+  - 'ceph-osd-nrpe'
+  - 'ceph-radosgw'
+  - 'ceph-radosgw-hacluster'
+
+  # Identity and Image
+  - 'keystone'
+  - 'keystone-hacluster'
+
+  - 'glance'
+  - 'glance-hacluster'
+
+  # Upgrade nova
+  - 'nova-cloud-controller'
+  - 'nova-cloud-controller-hacluster'
+
+  - 'nova-compute'
+
+  # Neutron upgrades
+  - 'neutron-api'
+  - 'neutron-api-hacluster'
+
+  - 'neutron-gateway'
+
+  - 'neutron-openvswitch'
+
+  # Backend block-storage upgrade.
+  # Note: just upgrade cinder service.
+  - 'cinder'
+  - 'cinder-hacluster'
+  - 'cinder-warmceph'
+
+  # Upgrade dashboard
+  - 'openstack-dashboard'
+  - 'openstack-dashboard-hacluster'
+
+  - 'rabbitmq-server'
+
+  - 'mysql'
+  - 'mysql-hacluster'
+
+add_services:
+  - 'ceph-radosgw-nrpe'
+  - 'keystone-nrpe'
+  - 'glance-nrpe'
+  - 'nova-cloud-controller-nrpe'
+  - 'nova-compute-nrpe'
+  - 'neutron-api-nrpe'
+  - 'neutron-gateway-nrpe'
+  - 'cinder-nrpe'
+  - 'openstack-dashboard-nrpe'
+  - 'rabbitmq-server-nrpe'
+  - 'mysql-nrpe'
+  - 'ntp'

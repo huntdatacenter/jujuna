@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import yaml
 import websockets
 import async_timeout
 
@@ -26,6 +27,7 @@ async def upgrade(
     charms_only=False,
     upgrade_only=False,
     dry_run=False,
+    settings=False,
     endpoint=None,
     username=None,
     password=None
@@ -63,15 +65,29 @@ async def upgrade(
     try:
         log.info('Applications present in the current model: {}'.format(', '.join(list(model.applications.keys()))))
 
+        if settings:
+            with open(settings.name, 'r') as stream:
+                try:
+                    settings_data = yaml.load(stream)
+                except yaml.YAMLError as e:
+                    settings_data = {}
+                    log.warn('Failed to load settings file: {}'.format(str(e)))
+                finally:
+                    origin_keys = settings_data['origin_keys'] if 'origin_keys' in settings_data else ORIGIN_KEYS
+                    services = settings_data['services'] if 'services' in settings_data else SERVICES
+                    add_services = settings_data['add_services'] if 'add_services' in settings_data else []
+        if not apps:
+            apps = services
+
         log.info('Upgrading charms')
 
         # If apps are not specified in the order use configuration from settings
-        if not apps:
-            log.info('Apps not specified, using default upgrade configuration: {}'.format(SERVICES))
-            apps = SERVICES
+
+        log.info('Service to upgrade: {}'.format(services))
+        log.info('Charms only upgrade: {}'.format(add_services))
 
         # Upgrade charm revisions
-        upgraded, latest_charms = await upgrade_charms(model, apps, upgrade_only, dry_run)
+        upgraded, latest_charms = await upgrade_charms(model, services + add_services, upgrade_only, dry_run)
 
         wss = defaultdict(int)
         wsm = defaultdict(int)
@@ -95,7 +111,7 @@ async def upgrade(
 
         # Upgrade services
         if not charms_only:
-            await upgrade_services(model, apps, origin, pause, dry_run)
+            await upgrade_services(model, apps, origin, origin_keys, pause, dry_run)
 
         # Log status values
         d = defaultdict(int)
@@ -131,7 +147,7 @@ async def ocata_relation_patch(model, dry_run, cinder_ceph):
     )
 
 
-async def upgrade_services(model, upgraded, origin, pause, dry_run):
+async def upgrade_services(model, upgraded, origin, origin_keys, pause, dry_run):
     log.info('Upgrading services')
 
     s_upgrade = 0
@@ -139,6 +155,7 @@ async def upgrade_services(model, upgraded, origin, pause, dry_run):
         if await is_rollable(model.applications[app_name]):
             await perform_rolling_upgrade(
                 model.applications[app_name],
+                origin_keys,
                 origin=origin,
                 pause=pause,
                 dry_run=dry_run
@@ -147,6 +164,7 @@ async def upgrade_services(model, upgraded, origin, pause, dry_run):
         else:
             await perform_bigbang_upgrade(
                 model.applications[app_name],
+                origin_keys,
                 origin=origin,
                 dry_run=dry_run
             )
@@ -367,6 +385,7 @@ async def order_units(name, units):
 
 async def perform_rolling_upgrade(
     application,
+    origin_keys,
     dry_run=False,
     evacuate=False,
     pause=False,
@@ -385,7 +404,7 @@ async def perform_rolling_upgrade(
 
     actions = await enumerate_actions(application)
     if not dry_run:
-        config_key = ORIGIN_KEYS.get(application.name, 'openstack-origin')
+        config_key = origin_keys.get(application.name, 'openstack-origin')
         await application.set_config({config_key: origin})
 
     ordered_units = await order_units(application.name, application.units)
@@ -445,7 +464,13 @@ async def perform_rolling_upgrade(
         log.info('Unit {} has finished the upgrade'.format(unit.name))
 
 
-async def perform_bigbang_upgrade(application, dry_run=False, pause=False, origin='cloud:xenial-ocata'):
+async def perform_bigbang_upgrade(
+    application,
+    origin_keys,
+    dry_run=False,
+    pause=False,
+    origin='cloud:xenial-ocata'
+):
     """Perform bigbang upgrade.
 
     Bigbang upgrade is performed on units of the application at once.
@@ -457,7 +482,7 @@ async def perform_bigbang_upgrade(application, dry_run=False, pause=False, origi
     """
     log.info('Performing a big-bang upgrade for service: {}'.format(application.name))
     if not dry_run:
-        config_key = ORIGIN_KEYS.get(application.name, 'openstack-origin')
+        config_key = origin_keys.get(application.name, 'openstack-origin')
         if config_key not in await application.get_config():
             log.warn('Unable to set source/origin during big-bang upgrade for service: {}'.format(application.name))
             log.info('Skipping upgrade for service: {}'.format(application.name))
