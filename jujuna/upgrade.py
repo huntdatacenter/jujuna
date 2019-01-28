@@ -85,7 +85,7 @@ async def upgrade(
 
         # If apps are not specified in the order use configuration from settings
 
-        log.info('Service to upgrade: {}'.format(services))
+        log.info('Services to upgrade: {}'.format(services))
         log.info('Charms only upgrade: {}'.format(add_services))
 
         # Upgrade charm revisions
