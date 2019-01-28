@@ -65,13 +65,14 @@ async def upgrade(
     try:
         log.info('Applications present in the current model: {}'.format(', '.join(list(model.applications.keys()))))
 
-        if settings:
-            with open(settings.name, 'r') as stream:
-                try:
+        settings_data = {}
+
+        try:
+            if settings:
+                with open(settings.name, 'r') as stream:
                     settings_data = yaml.load(stream)
-                except yaml.YAMLError as e:
-                    settings_data = {}
-                    log.warn('Failed to load settings file: {}'.format(str(e)))
+        except yaml.YAMLError as e:
+            log.warn('Failed to load settings file: {}'.format(str(e)))
 
         origin_keys = settings_data['origin_keys'] if 'origin_keys' in settings_data else ORIGIN_KEYS
         services = settings_data['services'] if 'services' in settings_data else SERVICES
