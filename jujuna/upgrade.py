@@ -72,10 +72,11 @@ async def upgrade(
                 except yaml.YAMLError as e:
                     settings_data = {}
                     log.warn('Failed to load settings file: {}'.format(str(e)))
-                finally:
-                    origin_keys = settings_data['origin_keys'] if 'origin_keys' in settings_data else ORIGIN_KEYS
-                    services = settings_data['services'] if 'services' in settings_data else SERVICES
-                    add_services = settings_data['add_services'] if 'add_services' in settings_data else []
+
+        origin_keys = settings_data['origin_keys'] if 'origin_keys' in settings_data else ORIGIN_KEYS
+        services = settings_data['services'] if 'services' in settings_data else SERVICES
+        add_services = settings_data['add_services'] if 'add_services' in settings_data else []
+
         if not apps:
             apps = services
 
