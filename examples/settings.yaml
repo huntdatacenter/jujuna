@@ -5,61 +5,60 @@ origin_keys:
   ceph-osd: source
   ceph-radosgw: source
 
+# Main OpenStack services to be upgraded
 services:
   # Ceph
   - 'ceph-mon'
-  - 'ceph-mon-nrpe'
   - 'ceph-osd'
-  - 'ceph-osd-nrpe'
   - 'ceph-radosgw'
-  - 'ceph-radosgw-hacluster'
 
-  # Identity and Image
+  # Identity
   - 'keystone'
-  - 'keystone-hacluster'
 
+  # Image
   - 'glance'
-  - 'glance-hacluster'
 
-  # Upgrade nova
+  # Nova
   - 'nova-cloud-controller'
-  - 'nova-cloud-controller-hacluster'
-
   - 'nova-compute'
 
   # Neutron upgrades
   - 'neutron-api'
-  - 'neutron-api-hacluster'
-
   - 'neutron-gateway'
-
   - 'neutron-openvswitch'
 
   # Backend block-storage upgrade.
   # Note: just upgrade cinder service.
   - 'cinder'
-  - 'cinder-hacluster'
   - 'cinder-warmceph'
 
   # Upgrade dashboard
   - 'openstack-dashboard'
-  - 'openstack-dashboard-hacluster'
 
   - 'rabbitmq-server'
 
   - 'mysql'
-  - 'mysql-hacluster'
 
 add_services:
+  - 'ceph-mon-nrpe'
+  - 'ceph-osd-nrpe'
+  - 'ceph-radosgw-hacluster'
   - 'ceph-radosgw-nrpe'
   - 'keystone-nrpe'
+  - 'keystone-hacluster'
   - 'glance-nrpe'
+  - 'glance-hacluster'
   - 'nova-cloud-controller-nrpe'
+  - 'nova-cloud-controller-hacluster'
   - 'nova-compute-nrpe'
   - 'neutron-api-nrpe'
+  - 'neutron-api-hacluster'
   - 'neutron-gateway-nrpe'
   - 'cinder-nrpe'
+  - 'cinder-hacluster'
   - 'openstack-dashboard-nrpe'
+  - 'openstack-dashboard-hacluster'
   - 'rabbitmq-server-nrpe'
   - 'mysql-nrpe'
+  - 'mysql-hacluster'
   - 'ntp'
