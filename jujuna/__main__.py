@@ -76,7 +76,7 @@ def get_parser():
                            help="Dry run - only show changes without upgrading")
     p_upgrade.add_argument("-t", "--timeout", default=0, type=int, help="Timeout after N seconds.")
     p_upgrade.add_argument("-s", "--settings", type=argparse.FileType('r'),
-                           help="Path to settings file (i.e. settings.yaml)")
+                           help="Path to settings file that overrides default settings (i.e. settings.yaml)")
     p_upgrade.add_argument("--endpoint", default=None, dest="endpoint",
                            help="Juju endpoint (requires model uuid instead of name)")
     p_upgrade.add_argument("--username", default=None, dest="username", help="Juju username")
