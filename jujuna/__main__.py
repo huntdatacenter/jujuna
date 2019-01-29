@@ -42,7 +42,7 @@ def get_parser():
 
     p_deploy = subparsers.add_parser('deploy', help="Deploy a local bundle to the current or selected model")
     p_deploy.add_argument('bundle_file', type=argparse.FileType('r'),
-                          help="Path to bundle file (i.e. ceph/bundle.yaml)")
+                          help="Path to bundle file (i.e. bundle.yaml)")
     p_deploy.add_argument("-c", "--controller", default=None, dest="ctrl_name", help="Controller (def: current)")
     p_deploy.add_argument("-m", "--model", default=None, dest="model_name", help="Model to use instead of current")
     p_deploy.add_argument("-w", "--wait", action='store_true', help="Wait for deploy to finish")
@@ -75,6 +75,8 @@ def get_parser():
     p_upgrade.add_argument("--dry-run", action='store_true', dest="dry_run",
                            help="Dry run - only show changes without upgrading")
     p_upgrade.add_argument("-t", "--timeout", default=0, type=int, help="Timeout after N seconds.")
+    p_upgrade.add_argument("-s", "--settings", type=argparse.FileType('r'),
+                           help="Path to settings file that overrides default settings (i.e. settings.yaml)")
     p_upgrade.add_argument("--endpoint", default=None, dest="endpoint",
                            help="Juju endpoint (requires model uuid instead of name)")
     p_upgrade.add_argument("--username", default=None, dest="username", help="Juju username")
