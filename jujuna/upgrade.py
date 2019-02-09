@@ -286,7 +286,7 @@ async def wait_until(model, apps, log_time=10, timeout=None, wait_period=0.5, lo
     await asyncio.wait_for(_block(log_count), timeout, loop=loop)
 
     if _disconnected():
-            raise websockets.ConnectionClosed(1006, 'no reason')
+        raise websockets.ConnectionClosed(1006, 'no reason')
 
 
 async def is_rollable(application):
