@@ -49,7 +49,7 @@ async def deploy(
 
     try:
         # Deploy a bundle
-        log.info("Deploy: {}.".format(entity_url))
+        log.info("Deploy: {}".format(entity_url))
         deployed_app = await model.deploy(
             entity_url
         )
