@@ -101,7 +101,7 @@ async def wait_until(model, deployed_app, log_time=5, timeout=None, wait_period=
     await asyncio.wait_for(_block(log_count), timeout, loop=loop)
 
     if _disconnected():
-            raise websockets.ConnectionClosed(1006, 'no reason')
+        raise websockets.ConnectionClosed(1006, 'no reason')
 
     d = defaultdict(int)
     for a in deployed_app:
