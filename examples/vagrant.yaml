@@ -21,8 +21,8 @@
         state: latest
         default_release: xenial-backports
 
-    - name: Install juju snap
-      command: snap install juju --classic
+    - name: Install juju 2.4/stable snap
+      command: snap install juju --classic --channel=2.4/stable
 
     - name: Run juju to generate juju dir
       command: /snap/bin/juju
