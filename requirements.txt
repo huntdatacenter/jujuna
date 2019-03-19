@@ -1,5 +1,5 @@
 pip>=10
-pyyaml
+pyyaml<=4.2,>=3.0
 async-timeout==2.0.1
 tox>=3.3
 juju>=0.10.2
