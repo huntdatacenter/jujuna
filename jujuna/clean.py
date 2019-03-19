@@ -86,6 +86,7 @@ async def clean(
                     await model.applications[app].destroy()
 
         if not ignore and force:
+            # TODO check this in manage to see if there was a change in latest libjuju
             machines = [m for m in model.machines.values() if 'arch' in m.safe_data['hardware-characteristics']]
             for machine in machines:
                 log.info('Remove machine {} from model'.format(machine.entity_id))

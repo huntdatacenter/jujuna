@@ -16,7 +16,7 @@ ORIGIN_KEYS = {
 # Services are upgraded in the order specified
 # The order of services is based on:
 # https://github.com/openstack-charmers/openstack-charms-tools/blob/master/os-upgrade.py
-# https://docs.openstack.org/charm-guide/latest/1708.html
+# https://docs.openstack.org/project-deploy-guide/charm-deployment-guide/latest/app-upgrade-openstack.html
 SERVICES = [
     # Ceph
     'ceph-mon',
