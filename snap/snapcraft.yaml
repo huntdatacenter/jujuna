@@ -12,8 +12,7 @@ parts:
   jujuna:
     plugin: python
     python-version: python3
-    requirements:
-      - ./requirements.txt
+    requirements: ./requirements.txt
     source: .
 apps:
   jujuna:
