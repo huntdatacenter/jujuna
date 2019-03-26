@@ -21,11 +21,11 @@ script:
   - tox
   - tox -e lint
   # - tox -e docs
-# deploy:
-#   provider: snap
-#   snap: jujuna
-#   channel: edge
-#   skip_cleanup: true
-#   on:
-#     branch: snap-deploy
-#     tags: true
+deploy:
+  provider: snap
+  snap: jujuna
+  channel: edge
+  skip_cleanup: true
+  on:
+    branch: snap-deploy
+    tags: true
