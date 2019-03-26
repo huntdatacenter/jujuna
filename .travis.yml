@@ -7,13 +7,13 @@ language: python
 #   # - "3.8-dev"
 matrix:
   include:
-  # - python: "3.5"
-  #   dist: xenial
+  - python: "3.5"
+    dist: xenial
   - python: "3.6"
     dist: xenial
     env: TRAVIS_TAG=deploy
-  # - python: "3.7"
-  #   dist: bionic
+  - python: "3.7"
+    dist: bionic
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install tox
@@ -21,13 +21,13 @@ install:
 script:
   - tox
   - tox -e lint
+  - tox -e docs
   - snapcraft
-  # - tox -e docs
 deploy:
   provider: snap
   snap: jujuna_*_amd64.snap
   channel: edge
   skip_cleanup: true
   on:
-    branch: snap-deploy
+    branch: master
     tags: true
