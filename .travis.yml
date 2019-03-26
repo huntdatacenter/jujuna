@@ -6,17 +6,18 @@ matrix:
     dist: xenial
   - python: "3.6"
     dist: xenial
+    env: BUILD_SNAP=true
   - python: "3.7"
     dist: bionic
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install tox
-  - sudo apt-get install snapcraft
+  - [[ -n $BUILD_SNAP ]] && sudo apt-get install snapcraft
 script:
   - tox
   - tox -e lint
   - tox -e docs
-  - snapcraft
+  - [[ -n $BUILD_SNAP ]] && snapcraft
 deploy:
   provider: snap
   snap: jujuna_*_amd64.snap
