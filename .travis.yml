@@ -3,26 +3,31 @@ language: python
 python:
   - "3.5"
   - "3.6"
+  - "3.7"
 # Enable 3.7 without globally enabling sudo and dist: xenial for other build jobs
-matrix:
-  include:
-    - python: 3.7
-      dist: xenial
-      sudo: true
+# matrix:
+#   include:
+#     - python: 3.7
+#       dist: xenial
+#       sudo: true
 # commands to install dependencies
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install -r requirements.txt
-jobs:
-  include:
-    - stage: test
-      script: tox
-    - stage: lint
-      script: tox -e lint
-    - stage: deploy
-      script: skip
-      deploy:
-        provider: snap
-        snap: jujuna
-        channel: edge
-        skip_cleanup: true
+script:
+  - tox
+  - tox -e lint
+  # - tox -e docs
+# jobs:
+#   include:
+#     - stage: test
+#       script: tox
+#     - stage: lint
+#       script: tox -e lint
+#     - stage: deploy
+#       script: skip
+#       deploy:
+#         provider: snap
+#         snap: jujuna
+#         channel: edge
+#         skip_cleanup: true
