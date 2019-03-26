@@ -1,20 +1,28 @@
-sudo: false
 language: python
-python:
-  - "3.5"
-  - "3.6"
-# Enable 3.7 without globally enabling sudo and dist: xenial for other build jobs
+sudo: false
 matrix:
   include:
-    - python: 3.7
-      dist: xenial
-      sudo: true
-# commands to install dependencies
+  - python: "3.5"
+    dist: xenial
+  - python: "3.6"
+    dist: xenial
+    env: BUILD_SNAP=true
+  - python: "3.7"
+    dist: bionic
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
-  - pip install -r requirements.txt
-# command to run tests
+  - pip install tox
+  - if [[ "$BUILD_SNAP" == true ]]; then sudo apt-get install snapcraft; fi
 script:
   - tox
   - tox -e lint
   - tox -e docs
+  - if [[ "$BUILD_SNAP" == true ]]; then snapcraft; fi
+deploy:
+  provider: snap
+  snap: jujuna_*_amd64.snap
+  channel: edge
+  skip_cleanup: true
+  on:
+    branch: master
+    python: "3.6"
