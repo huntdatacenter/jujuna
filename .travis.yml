@@ -1,11 +1,19 @@
 sudo: false
 language: python
-dist: xenial
-python:
-  - "3.5"
-  - "3.6"
-  - "3.7"
-  # - "3.8-dev"
+# python:
+#   - "3.5"
+#   - "3.6"
+#   - "3.7"
+#   # - "3.8-dev"
+matrix:
+  include:
+  - python: "3.5"
+    dist: xenial
+  - python: "3.6"
+    dist: xenial
+    env: TRAVIS_TAG=deploy
+  - python: "3.7"
+    dist: bionic
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install -r requirements.txt
@@ -13,8 +21,11 @@ script:
   - tox
   - tox -e lint
   # - tox -e docs
-deploy:
-  provider: snap
-  snap: jujuna
-  channel: edge
-  skip_cleanup: true
+# deploy:
+#   provider: snap
+#   snap: jujuna
+#   channel: edge
+#   skip_cleanup: true
+#   on:
+#     branch: snap-deploy
+#     tags: true
