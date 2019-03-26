@@ -5,7 +5,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
-  - "3.8-dev"
+  # - "3.8-dev"
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install -r requirements.txt
@@ -13,16 +13,8 @@ script:
   - tox
   - tox -e lint
   # - tox -e docs
-# jobs:
-#   include:
-#     - stage: test
-#       script: tox
-#     - stage: lint
-#       script: tox -e lint
-#     - stage: deploy
-#       script: skip
-#       deploy:
-#         provider: snap
-#         snap: jujuna
-#         channel: edge
-#         skip_cleanup: true
+deploy:
+  provider: snap
+  snap: jujuna
+  channel: edge
+  skip_cleanup: true
