@@ -20,10 +20,10 @@ install:
 script:
   - tox
   - tox -e lint
+  - snapcraft
   # - tox -e docs
 deploy:
   provider: snap
-  script: snapcraft
   snap: jujuna_*_amd64.snap
   channel: edge
   skip_cleanup: true
