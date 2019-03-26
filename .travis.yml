@@ -23,7 +23,7 @@ script:
   # - tox -e docs
 deploy:
   provider: snap
-  snap: jujuna_*_amd64.snap
+  snap: jujuna_amd64.snap
   channel: edge
   skip_cleanup: true
   on:
