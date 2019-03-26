@@ -16,11 +16,9 @@ install:
 jobs:
   include:
     - stage: test
-      # command to run tests
-      script:
-        - tox
-        - tox -e lint
-        - tox -e docs
+      script: tox
+    - stage: lint
+      script: tox -e lint
     - stage: deploy
       script: skip
       deploy:
