@@ -18,14 +18,15 @@ ORIGIN_KEYS = {
 # https://github.com/openstack-charmers/openstack-charms-tools/blob/master/os-upgrade.py
 # https://docs.openstack.org/project-deploy-guide/charm-deployment-guide/latest/app-upgrade-openstack.html
 SERVICES = [
+    # Identity
+    'keystone',
+
     # Ceph
     'ceph-mon',
     'ceph-osd',
     'ceph-radosgw',
 
-    # Identity and Image
-    'keystone',
-
+    # Image
     'glance',
 
     # Upgrade nova
