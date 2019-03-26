@@ -17,6 +17,7 @@ matrix:
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install tox
+  - apt-get install snapcraft
 script:
   - tox
   - tox -e lint
