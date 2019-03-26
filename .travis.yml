@@ -13,8 +13,18 @@ matrix:
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install -r requirements.txt
-# command to run tests
-script:
-  - tox
-  - tox -e lint
-  - tox -e docs
+jobs:
+  include:
+    - stage: test
+      # command to run tests
+      script:
+        - tox
+        - tox -e lint
+        - tox -e docs
+    - stage: deploy
+      script: skip
+      deploy:
+        provider: snap
+        snap: jujuna
+        channel: edge
+        skip_cleanup: true
