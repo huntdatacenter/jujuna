@@ -12,12 +12,12 @@ matrix:
 install:
   - pip install -q pytest flake8 pip>=10 tox-travis
   - pip install tox
-  - [[ -n $BUILD_SNAP ]] && sudo apt-get install snapcraft
+  - if [[ "$BUILD_SNAP" == true ]]; then sudo apt-get install snapcraft fi
 script:
   - tox
   - tox -e lint
   - tox -e docs
-  - [[ -n $BUILD_SNAP ]] && snapcraft
+  - if [[ "$BUILD_SNAP" == true ]]; then snapcraft fi
 deploy:
   provider: snap
   snap: jujuna_*_amd64.snap
