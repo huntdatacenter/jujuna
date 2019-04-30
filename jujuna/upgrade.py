@@ -78,15 +78,16 @@ async def upgrade(
         services = settings_data['services'] if 'services' in settings_data else SERVICES
         add_services = settings_data['add_services'] if 'add_services' in settings_data else []
 
-        if not apps:
-            apps = services
-
-        log.info('Upgrading charms')
-
         # If apps are not specified in the order use configuration from settings
+        if apps:
+            services = apps
+            add_services = []
 
         log.info('Services to upgrade: {}'.format(services))
-        log.info('Charms only upgrade: {}'.format(add_services))
+        if add_services:
+            log.info('Charms only upgrade: {}'.format(add_services))
+
+        log.info('Upgrading charms')
 
         # Upgrade charm revisions
         upgraded, latest_charms = await upgrade_charms(model, services + add_services, upgrade_only, dry_run)
@@ -105,15 +106,15 @@ async def upgrade(
             raise Exception('Errors during upgrading charms to latest revision')
 
         # Ocata upgrade requires additional relation to succeed
-        if not charms_only and origin == 'cloud:xenial-ocata' and 'nova-compute' in apps:
-            if 'cinder-warmceph' in apps:
+        if not charms_only and origin == 'cloud:xenial-ocata' and 'nova-compute' in services:
+            if 'cinder-warmceph' in services:
                 await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-warmceph')
-            elif 'cinder-ceph' in apps:
+            elif 'cinder-ceph' in services:
                 await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-ceph')
 
         # Upgrade services
         if not charms_only:
-            await upgrade_services(model, apps, origin, origin_keys, pause, dry_run)
+            await upgrade_services(model, services, origin, origin_keys, pause, dry_run)
 
         # Log status values
         d = defaultdict(int)
