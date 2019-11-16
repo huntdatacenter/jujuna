@@ -42,15 +42,17 @@ async def wait_until(model, *conditions, log_time=5, timeout=None, wait_period=0
 
 
 async def clean(
-    ctrl_name=None,
-    model_name=None,
+    ctrl_name='',
+    model_name='',
     ignore=[],
     wait=False,
     force=False,
     dry_run=False,
-    endpoint=None,
-    username=None,
-    password=None
+    endpoint='',
+    username='',
+    password='',
+    cacert='',
+    **kwargs
 ):
     """Destroy applications present in the current or selected model.
 
@@ -66,13 +68,15 @@ async def clean(
     :param endpoint: string
     :param username: string
     :param password: string
+    :param cacert: string
     """
     controller, model = await connect_juju(
         ctrl_name,
         model_name,
         endpoint=endpoint,
         username=username,
-        password=password
+        password=password,
+        cacert=cacert
     )
 
     try:

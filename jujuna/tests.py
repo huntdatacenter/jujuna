@@ -5,7 +5,7 @@ import logging
 import async_timeout
 from collections import defaultdict
 from juju.errors import JujuError
-from jujuna.helper import connect_juju
+from jujuna.helper import connect_juju, log_traceback
 
 from jujuna.brokers.api import Api as ApiBroker
 from jujuna.brokers.file import File as FileBroker
@@ -22,12 +22,14 @@ log = logging.getLogger('jujuna.tests')
 
 
 async def test(
-    test_suite=None,
-    ctrl_name=None,
-    model_name=None,
-    endpoint=None,
-    username=None,
-    password=None
+    test_suite='',
+    ctrl_name='',
+    model_name='',
+    endpoint='',
+    username='',
+    password='',
+    cacert='',
+    **kwargs
 ):
     """Run a test suite against applications deployed in the current or selected model.
 
@@ -42,6 +44,7 @@ async def test(
     :param endpoint: string
     :param username: string
     :param password: string
+    :param cacert: string
     """
     if test_suite:
         with open(test_suite.name, 'r') as stream:
@@ -55,7 +58,8 @@ async def test(
         model_name,
         endpoint=endpoint,
         username=username,
-        password=password
+        password=password,
+        cacert=cacert
     )
 
     model_passed, model_failed = 0, 0
@@ -94,7 +98,8 @@ async def test(
         log.info('[FINISHED] Passed tests: {} Failed tests: {}'.format(model_passed, model_failed))
 
     except JujuError as e:
-        log.error(e.message)
+        log.error('JujuError during tests')
+        log_traceback(e)
     finally:
         # Disconnect from the api server and cleanup.
         await model.disconnect()
