@@ -78,4 +78,4 @@ class TestConnect(TestCase):
         ))
 
         Controller.connect.mock.assert_called_once_with(ctrl_name)
-        Model.connect.mock.assert_called_once()
+        Model.connect.mock.assert_called_once_with()
