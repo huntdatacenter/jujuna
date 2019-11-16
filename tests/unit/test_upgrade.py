@@ -67,7 +67,7 @@ class TestUpgrade(TestCase):
         app.set_config.mock.assert_called_once_with({'openstack-origin': origin})
         enumerate_actions.mock.assert_called_once_with(app)
         unit.run_action.mock.assert_called_once_with(upgrade_action)
-        wait_until.mock.assert_called_once()
+        wait_until.mock.assert_called_once_with(model, list(model.applications.values()), loop=None, timeout=1800)
 
     @patch('asyncio.sleep', new=AsyncMock())
     @patch('jujuna.upgrade.get_hacluster_subordinate_pairs')
@@ -123,7 +123,7 @@ class TestUpgrade(TestCase):
         unit.run_action.mock.assert_any_call('pause')
         unit.run_action.mock.assert_any_call(upgrade_action)
         unit.run_action.mock.assert_called_with('resume')
-        wait_until.mock.assert_called_once()
+        wait_until.mock.assert_called_once_with(model, list(model.applications.values()), loop=None, timeout=1800)
 
     @patch('asyncio.sleep', new=AsyncMock())
     @patch('jujuna.upgrade.get_hacluster_subordinate_pairs')
@@ -169,7 +169,8 @@ class TestUpgrade(TestCase):
             static=['set_config', 'get_config'],
             props={'name': 'test', 'units': units, 'relations': []}
         )
-        model = AsyncClassMock(props={'applications': {'test': app}, 'loop': None})
+        apps = {'test': app}
+        model = AsyncClassMock(props={'applications': apps, 'loop': None})
 
         app.get_config.mock.side_effect = func
         order_units.mock.return_value = units
@@ -203,4 +204,4 @@ class TestUpgrade(TestCase):
             unit_ha.run_action.mock.assert_any_call('pause')
             unit_ha.run_action.mock.assert_called_with('resume')
 
-        wait_until.mock.assert_called()
+        wait_until.mock.assert_called_with(model, list(model.applications.values()), loop=None, timeout=1800)

@@ -531,7 +531,7 @@ async def perform_upgrade(
 
         await wait_until(
             model,
-            model.applications.values(),
+            list(model.applications.values()),
             timeout=1800,
             loop=model.loop
         )
