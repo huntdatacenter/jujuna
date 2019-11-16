@@ -8,7 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - List yet unreleased changes.
 
+## [0.2.0] - 2019-11-16
+### Changed
+- Dependency versions updated to current libjuju (waiting only for macaroonbakery to also support python 3.8)
+- Allow upgrade without using origin - if not supported by charm - origin now has to be specified explicitly
+- Charm upgrade does not check locally built ('local:app') charms
+- When using upgrade-only, charms are not compared with charmstore versions, skipping straight to upgrade of services
+- Improved wait on charm config change when setting origin
+### Added
+- Support passing of --cacert $CACERT parameter in authentication using libjuju when accessing from remote machine
+- Origin keys can be specified as parameter (key=value,key2=value2)
+- Upgrade action name as parameters - defaulting to 'openstack-upgrade' in perform_upgrade
+- Support key value parameters for upgrade action (key=value,key2=value2)
+- Debug parameter - default log level without debug is INFO
+- Async (class) methods mocking for unit-testing of jujuna code
+- Tests for upgrade - perform_upgrade (covering simple, rolling and hacluster cases)
+
 ## [0.1.0] - 2018-10-24
 ### Added
 - Initial opensourcing commit
-
