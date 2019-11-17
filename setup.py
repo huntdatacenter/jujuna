@@ -36,7 +36,7 @@ SETUP = {
     ],
     'install_requires': [
         'pyyaml<=6.0,>=5.1.2',
-        'async-timeout==3.0.1',
+        'async-timeout<=3.99,>=2.0.1',
         'juju<=2.6.99,>=2.6.3',
         'argcomplete==1.10.0',
         'theblues==0.5.2'
