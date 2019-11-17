@@ -369,7 +369,7 @@ def get_hacluster_subordinate_pairs(application):
                         sub_pairs[unit.name] = sub_unit
             return sub_pairs
 
-    return None
+    return {}
 
 
 async def enumerate_actions(application):
