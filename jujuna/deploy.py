@@ -3,8 +3,8 @@
 import asyncio
 import websockets
 import logging
-from collections import defaultdict
-from jujuna.helper import connect_juju
+from collections import Counter
+from jujuna.helper import connect_juju, log_traceback
 from juju.errors import JujuError
 
 
@@ -14,12 +14,14 @@ log = logging.getLogger('jujuna.deploy')
 
 async def deploy(
     bundle_file,
-    ctrl_name=None,
-    model_name=None,
+    ctrl_name='',
+    model_name='',
     wait=False,
-    endpoint=None,
-    username=None,
-    password=None
+    endpoint='',
+    username='',
+    password='',
+    cacert='',
+    **kwargs
 ):
     """Deploy a local juju bundle.
 
@@ -35,6 +37,7 @@ async def deploy(
     :param endpoint: string
     :param username: string
     :param password: string
+    :param cacert: string
     """
     log.info('Reading bundle: {}'.format(bundle_file.name))
     entity_url = 'local:' + bundle_file.name.replace('/bundle.yaml', '')
@@ -44,37 +47,51 @@ async def deploy(
         model_name,
         endpoint=endpoint,
         username=username,
-        password=password
+        password=password,
+        cacert=cacert
     )
 
     try:
         # Deploy a bundle
         log.info("Deploy: {}".format(entity_url))
-        deployed_app = await model.deploy(
+        deployed_apps = await model.deploy(
             entity_url
         )
 
         if wait:
             await wait_until(
                 model,
-                deployed_app,
+                deployed_apps,
                 loop=model.loop
             )
+        try:
+            d = Counter([a.status for a in deployed_apps])
+        except Exception:
+            log.error('Collecting status failed')
+            d = {}
+        log.info('{} - Machines: {} Apps: {} Stats: {}'.format(
+            'DEPLOYED' if wait else 'CURRENT',
+            len(model.machines),
+            len(model.applications),
+            dict(d)
+        ))
+
     except JujuError as e:
-        log.info(str(e))
+        log.error('JujuError during deploy')
+        log_traceback(e)
     finally:
         # Disconnect from the api server and cleanup.
         await model.disconnect()
         await controller.disconnect()
 
 
-async def wait_until(model, deployed_app, log_time=5, timeout=None, wait_period=0.5, loop=None):
+async def wait_until(model, apps, log_time=5, timeout=None, wait_period=0.5, loop=None):
     """Blocking with logs.
 
     Return only after all conditions are true.
 
     :param model: juju model
-    :param deployed_app: juju application
+    :param apps: juju application
     :param log_time: logging frequency (s)
     :param timeout: blocking timeout (s)
     :param wait_period: waiting time between checks (s)
@@ -86,28 +103,28 @@ async def wait_until(model, deployed_app, log_time=5, timeout=None, wait_period=
         return not (model.is_connected() and model.connection().is_open)
 
     async def _block(log_count):
-        while not _disconnected() and not all(a.status == 'active' for a in deployed_app):
+        blockable = ['maintenance', 'blocked', 'waiting', 'error']
+        while (
+            not _disconnected() and
+            any(a.status != 'active' for a in apps) and
+            any(u.workload_status in blockable for a in apps for u in a.units)
+        ):
             await asyncio.sleep(wait_period, loop=loop)
             log_count += 0.5
             if log_count % log_time == 0:
-                d = defaultdict(int)
-                for a in deployed_app:
-                    d[a.status] += 1
-                log.info('[RUNNING] Machines: {} Apps: {} Stats: {}'.format(
+                ass = Counter([
+                    a.status for a in apps
+                ])
+                wss = Counter([
+                    unit.workload_status for a in apps for unit in a.units
+                ])
+                log.info('PROGRESS - Machines: {} Apps: {} Stats: {} Workload: {}'.format(
                     len(model.machines),
                     len(model.applications),
-                    dict(d)
+                    dict(ass),
+                    dict(wss)
                 ))
     await asyncio.wait_for(_block(log_count), timeout, loop=loop)
 
     if _disconnected():
         raise websockets.ConnectionClosed(1006, 'no reason')
-
-    d = defaultdict(int)
-    for a in deployed_app:
-        d[a.status] += 1
-    log.info('[DONE] Machines: {} Apps: {} Stats: {}'.format(
-        len(model.machines),
-        len(model.applications),
-        dict(d)
-    ))
