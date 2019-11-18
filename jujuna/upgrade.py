@@ -93,9 +93,9 @@ async def upgrade(
             services = apps
             add_services = []
 
-        log.info('Services to upgrade: {}'.format(services))
+        log.info('Services to upgrade: {}'.format(', '.join(services)))
         if add_services and not upgrade_only:
-            log.info('Charms only upgrade: {}'.format(add_services))
+            log.info('Charms only upgrade: {}'.format(', '.join(add_services)))
         all_services = services + add_services
 
         # Upgrade charm revisions
@@ -149,14 +149,28 @@ async def ocata_relation_patch(model, dry_run, cinder_ceph):
                 log.warn('Ignored: relation already exists')
 
 
+def get_service_list(model, upgraded):
+    return [(name, get_service_version(model.applications.get(name, None))) for name in upgraded]
+
+
+def get_service_version(application):
+    try:
+        serv_version = application.safe_data.get('workload-version', '')
+    except Exception:
+        serv_version = ''
+    return serv_version
+
+
 async def upgrade_services(model, upgraded, origin, origin_keys, upgrade_action, upgrade_params, pause, dry_run):
-    log.info('Upgrading services ({})'.format(
-        upgrade_action if upgrade_action else 'openstack-upgrade')
-    )
+    sl_before = get_service_list(model, upgraded)
+    log.info('Application upgrade order: {}'.format(
+        ', '.join(['{} ({})'.format(name, version) for name, version in sl_before])
+    ))
 
     s_upgrade = 0
+    # upgrade_action is none by default, otherwise enforcing perform_upgrade
+    use_action = upgrade_action if upgrade_action else 'openstack-upgrade'
     for app_name in upgraded:
-        use_action = upgrade_action if upgrade_action else 'openstack-upgrade'
         rollable_app = await is_rollable(model.applications[app_name], use_action)
         if upgrade_action or rollable_app:
             await perform_upgrade(
@@ -180,13 +194,17 @@ async def upgrade_services(model, upgraded, origin, origin_keys, upgrade_action,
             )
             s_upgrade += 1
 
-    await wait_until(
-        model,
-        model.applications.values(),
-        timeout=1800,
-        loop=model.loop
-    )
+        await wait_until(
+            model,
+            model.applications.values(),
+            timeout=1800,
+            loop=model.loop
+        )
 
+    sl_after = get_service_list(model, upgraded)
+    log.info('Application upgrade order: {}'.format(
+        ', '.join(['{} ({}=>{})'.format(before[0], before[1], after[1]) for before, after in zip(sl_before, sl_after)])
+    ))
     log.info('Upgrade finished ({} upgraded services)'.format(s_upgrade))
 
 
@@ -383,15 +401,15 @@ async def enumerate_actions(application):
     return actions.keys()
 
 
-async def order_units(name, units):
+async def order_units(label, units):
     """Determing order of units.
 
     Returns a list of units beginning with leader.
 
-    :param name: string
+    :param label: string
     :param units: list of juju units
     """
-    log.info('Determining ordering for service: {}'.format(name))
+    log.info('{} - Determining order of units'.format(label))
     ordered = []
 
     is_leader_data = []
@@ -410,9 +428,11 @@ async def order_units(name, units):
         else:
             ordered.append(unit)
 
-    log.info('Upgrade order is: {} Leader: {}'.format(
-        ', '.join([unit.name for unit in ordered]),
-        leader_unit
+    log.info('{} - Upgrade order is: {} (leader){}{}'.format(
+        label,
+        leader_unit,
+        ', ' if len(ordered) > 1 else '',
+        ', '.join([unit.name for unit in ordered if unit.name != leader_unit]),
     ))
     return ordered
 
@@ -440,6 +460,8 @@ async def perform_upgrade(
     :param pause: boolean
     :param origin: origin string
     """
+    label = application.name.upper()
+    log.info('{} - Begin rolling upgrade'.format(label))
 
     actions = await enumerate_actions(application)
     if origin and not dry_run:
@@ -459,10 +481,10 @@ async def perform_upgrade(
                 config = await application.get_config()
                 current = config.get(config_key, {}).get('value', '')
                 config_is_set = current == origin
-                log.info('PROGRESS - Setting origin {} = {} => {}'.format(config_key, previous, current))
-        log.info('DONE - Setting origin {} = {} => {}'.format(config_key, previous, current))
+                log.info('{} - Setting config {} = {} => {}'.format(label, config_key, previous, current))
+        log.info('{} - Config {} = {}'.format(label, config_key, current))
 
-    ordered_units = await order_units(application.name, application.units) if rollable else application.units
+    ordered_units = await order_units(label, application.units) if rollable else application.units
     hacluster_pairs = get_hacluster_subordinate_pairs(application) if (rollable and pause) else {}  # TODO see fx
 
     for unit in ordered_units:
@@ -470,64 +492,64 @@ async def perform_upgrade(
 
         if evacuate and application.name == 'nova-compute':
             # NOT IMPLEMENTED
-            log.warn('Nova evacuation is not implemented, app will be skipped')
+            log.warn('{} - Nova evacuation is not implemented, app will be skipped'.format(label))
             break
 
         if pause and hacluster_unit:
             # TODO this will pause all the units for hacluster subordinates
-            log.info('Pausing service on hacluster subordinate: {}'.format(hacluster_unit.name))
+            log.info('{} - Pausing service on hacluster subordinate: {}'.format(label, hacluster_unit.name))
             if not dry_run:
                 async with async_timeout.timeout(300):
                     action = await hacluster_unit.run_action('pause')
                     await action.wait()
-                    log.debug('Service action: {} on unit: {} status: {}'.format(
-                        unit.name, 'pause', action.status
+                    log.debug('{} - Service action: {} on unit: {} status: {}'.format(
+                        label, unit.name, 'pause', action.status
                     ))
-            log.info('Service on hacluster subordinate {} is paused'.format(hacluster_unit.name))
+            log.info('{} - Service on hacluster subordinate {} is paused'.format(label, hacluster_unit.name))
 
         if pause and 'pause' in actions:
-            log.info('Pausing service on unit: {}'.format(unit.name))
+            log.info('{} - Pausing service on unit: {}'.format(label, unit.name))
             if not dry_run:
                 async with async_timeout.timeout(300):
                     action = await unit.run_action('pause')
                     await action.wait()
-                    log.debug('Service action: {} on unit: {} status: {}'.format(
-                        unit.name, 'pause', action.status
+                    log.debug('{} - Service action: {} on unit: {} status: {}'.format(
+                        label, unit.name, 'pause', action.status
                     ))
-            log.info('Service on unit {} is paused'.format(unit.name))
+            log.info('{} - Service on unit {} is paused'.format(label, unit.name))
 
         if upgrade_action in actions:
-            log.info('Upgrading service for unit: {}'.format(unit.name))
+            log.info('{} - Upgrading service for unit: {}'.format(label, unit.name))
             if not dry_run:
                 action = await unit.run_action(upgrade_action, **upgrade_params)
                 await action.wait()
-                log.debug('Service action: {} on unit: {} status: {}'.format(
-                    unit.name, upgrade_action, action.status
+                log.debug('{} - Service action: {} on unit: {} status: {}'.format(
+                    label, unit.name, upgrade_action, action.status
                 ))
-            log.info('Completed upgrade for unit: {}'.format(unit.name))
+            log.info('{} - Completed upgrade for unit: {}'.format(label, unit.name))
 
         if pause and 'resume' in actions:
-            log.info('Resuming service on unit: {}'.format(unit.name))
+            log.info('{} - Resuming service on unit: {}'.format(label, unit.name))
             if not dry_run:
                 async with async_timeout.timeout(300):
                     action = await unit.run_action('resume')
                     await action.wait()
-                    log.debug('Service action: {} on unit: {} status: {}'.format(
-                        unit.name, 'resume', action.status
+                    log.debug('{} - Service action: {} on unit: {} status: {}'.format(
+                        label, unit.name, 'resume', action.status
                     ))
-            log.info('Service on unit {} has resumed'.format(unit.name))
+            log.info('{} - Service on unit {} has resumed'.format(label, unit.name))
 
         if pause and hacluster_unit:
             # TODO this will resume all the units for hacluster subordinates
-            log.info('Resuming service on hacluster subordinate: {}'.format(hacluster_unit.name))
+            log.info('{} - Resuming service on hacluster subordinate: {}'.format(label, hacluster_unit.name))
             if not dry_run:
                 async with async_timeout.timeout(300):
                     action = await hacluster_unit.run_action('resume')
                     await action.wait()
-                    log.debug('Service action: {} on unit: {} status: {}'.format(
-                        unit.name, 'resume', action.status
+                    log.debug('{} - Service action: {} on unit: {} status: {}'.format(
+                        label, unit.name, 'resume', action.status
                     ))
-            log.info('Service on hacluster subordinate {} has resumed'.format(hacluster_unit.name))
+            log.info('{} - Service on hacluster subordinate {} has resumed'.format(label, hacluster_unit.name))
 
         await wait_until(
             model,
@@ -535,7 +557,8 @@ async def perform_upgrade(
             timeout=1800,
             loop=model.loop
         )
-        log.info('Unit {} has finished the upgrade'.format(unit.name))
+        log.info('{} - Unit {} has finished the upgrade'.format(label, unit.name))
+    log.info('{} - Finish rolling upgrade'.format(label))
 
 
 async def perform_bigbang_upgrade(
@@ -554,7 +577,7 @@ async def perform_bigbang_upgrade(
     :param pause: boolean
     :param origin: origin string
     """
-    log.info('Performing a big-bang upgrade for service: {}'.format(application.name))
+    log.info('Big-bang upgrade: {}'.format(application.name))
     if origin and not dry_run:
         config_key = origin_keys.get(application.name, 'openstack-origin')
         if config_key not in await application.get_config():
