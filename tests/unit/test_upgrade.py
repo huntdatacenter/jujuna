@@ -119,7 +119,7 @@ class TestUpgrade(TestCase):
         ))
         app.set_config.mock.assert_called_once_with({'openstack-origin': origin})
         enumerate_actions.mock.assert_called_once_with(app)
-        order_units.mock.assert_called_once_with(app.name, app.units)
+        order_units.mock.assert_called_once_with(app.name.upper(), app.units)
         unit.run_action.mock.assert_any_call('pause')
         unit.run_action.mock.assert_any_call(upgrade_action)
         unit.run_action.mock.assert_called_with('resume')
@@ -192,7 +192,7 @@ class TestUpgrade(TestCase):
         ))
         app.set_config.mock.assert_called_once_with({'openstack-origin': origin})
         enumerate_actions.mock.assert_called_once_with(app)
-        order_units.mock.assert_called_once_with(app.name, app.units)
+        order_units.mock.assert_called_once_with(app.name.upper(), app.units)
         get_hacluster_subordinate_pairs.assert_called_once_with(app)
 
         for unit in units:
