@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - master
+    - snap-build
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install snapcraft
+      uses: samuelmeuli/action-snapcraft@v1.0.0
+    - name: Snap build
+      run: snapcraft
+#     - name: Snap release
+#       run: snapcraft push --release=edge jujuna_*.snap
+    - name: Snap clean
+      run: snapcraft clean
