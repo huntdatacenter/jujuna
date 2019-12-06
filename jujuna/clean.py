@@ -5,6 +5,7 @@ import websockets
 import logging
 from jujuna.helper import connect_juju
 from juju.errors import JujuError
+from juju.client import client
 
 
 # create logger
@@ -90,14 +91,14 @@ async def clean(
                     await model.applications[app].destroy()
 
         if not ignore and force:
-            machines = [m for m in model.machines.values() if 'arch' in m.safe_data['hardware-characteristics']]
-            for machine in machines:
-                log.info('Remove machine {} from model'.format(machine.entity_id))
+            facade = client.ClientFacade.from_connection(model.connection())
+            for machine in await model.get_machines():
+                log.info('Remove machine {} from model'.format(machine))
                 if not dry_run:
                     try:
-                        await machine.destroy(force=True)
+                        await facade.DestroyMachines(force=force, machine_names=[machine])
                     except Exception as e:
-                        log.warn('ERROR: {}'.format(e))
+                        log.warn('Removing machine from model failed or already removed. {}'.format(e))
 
         if wait and not ignore and not dry_run:
             await wait_until(

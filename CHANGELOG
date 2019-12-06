@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2019-12-06
 ### Changed
-- List yet unreleased changes.
+- clean is calling destroy machine without waiting for result when force - there was extra wait avoided from libjuju
+- we get to use current machines in clean
+- Examples now use bionic and juju 2.7
+- Dockerfile adds gettext-base - with envsubst if you change bundles with makefile or similar
 
 ## [0.2.0] - 2019-11-16
 ### Changed
