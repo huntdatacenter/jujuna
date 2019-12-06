@@ -1,9 +1,9 @@
 name: Upload Python Package
 
 on:
-  push:
-    branches:
-    - master
+  create:
+    tags:
+    - refs/tags/*
 
 jobs:
   deploy:
@@ -24,4 +24,4 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         python setup.py sdist bdist_wheel
-        twine upload dist/*
+        if [[ $(git rev-parse --abbrev-ref HEAD) = "master" ]]; then twine upload dist/* fi
