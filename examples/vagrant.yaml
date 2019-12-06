@@ -15,14 +15,44 @@
           # Add snaps to path
           export PATH=/snap/bin:$PATH
 
-    - name: Install packages
-      apt:
-        name: ["zfsutils-linux", "apt-cacher-ng", "python3", "python3-pip", "lxd", "lxd-client"]
-        state: latest
-        default_release: xenial-backports
+    - name: Install and configure snaps - juju 2.4 (xenial)
+      block:
 
-    - name: Install juju 2.4/stable snap
-      command: snap install juju --classic --channel=2.4/stable
+        - name: Install packages (xenial)
+          apt:
+            name: ["zfsutils-linux", "apt-cacher-ng", "python3", "python3-pip", "lxd", "lxd-client"]
+            state: latest
+            default_release: xenial-backports
+
+        - name: Install juju 2.4/stable snap (xenial)
+          command: snap install juju --classic --channel=2.4/stable
+
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'xenial'
+
+    - name: Install and configure snaps - juju 2.7 (bionic)
+      block:
+
+        - name: Install packages
+          apt:
+            name: ["zfsutils-linux", "apt-cacher-ng", "python3", "python3-pip"]
+            state: latest
+
+        - name: Install lxd snap (https://jaas.ai/docs/lxd-cloud#heading--installing-lxd)
+          command: snap install lxd
+
+        - name: Migrate lxd from apt to snap
+          command: "/snap/bin/lxd.migrate -yes"
+
+        - name: Assure apt LXD purged
+          apt:
+            name: ["liblxc1", "lxcfs", "lxd", "lxd-client"]
+            state: absent
+            purge: true
+
+        - name: Install juju 2.7/stable snap
+          command: snap install juju --classic --channel=2.7/stable
+
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'bionic'
 
     - name: Run juju to generate juju dir
       command: /snap/bin/juju
@@ -79,4 +109,3 @@
       become: yes
       become_user: vagrant
       ignore_errors: yes
-
