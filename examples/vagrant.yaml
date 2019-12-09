@@ -40,6 +40,20 @@
         - name: Install lxd snap (https://jaas.ai/docs/lxd-cloud#heading--installing-lxd)
           command: snap install lxd
 
+        - name: Sleep for 10 seconds for systemd to handle LXD service state
+          wait_for:
+            timeout: 30
+
+        - name: Assure service lxd is started
+          service:
+            name: lxd
+            state: started
+
+        - name: Assure service snap.lxd.daemon is started
+          service:
+            name: snap.lxd.daemon
+            state: started
+
         - name: Migrate lxd from apt to snap
           command: "/snap/bin/lxd.migrate -yes"
 
@@ -105,7 +119,7 @@
         executable: pip3
 
     - name: Bootstrap juju controller
-      command: juju bootstrap lxd
+      command: juju bootstrap localhost lxd
       become: yes
       become_user: vagrant
       ignore_errors: yes
