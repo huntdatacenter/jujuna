@@ -1,6 +1,6 @@
 name: jujuna
 base: core18
-version: '0.2.1'
+version: '0.2.2'
 summary: Jujuna, continuous deployment, upgrade and testing for Juju.
 description: |
   Jujuna, continuous deployment, upgrade and testing for Juju.
