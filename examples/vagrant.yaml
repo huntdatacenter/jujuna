@@ -38,16 +38,21 @@
             state: latest
 
         - name: Install lxd snap (https://jaas.ai/docs/lxd-cloud#heading--installing-lxd)
-          command: snap install lxd
+          snap:
+            name: lxd
+            state: present
+          register: lxdsnap
 
         - name: Sleep for 10 seconds for systemd to handle LXD service state
           wait_for:
             timeout: 30
+          when: lxdsnap.changed
 
         - name: Assure service lxd is started
           service:
             name: lxd
             state: started
+          when: lxdsnap.changed
 
         - name: Assure service snap.lxd.daemon is started
           service:
@@ -56,6 +61,7 @@
 
         - name: Migrate lxd from apt to snap
           command: "/snap/bin/lxd.migrate -yes"
+          when: lxdsnap.changed
 
         - name: Assure apt LXD purged
           apt:
