@@ -6,7 +6,7 @@
 
 Continuous deployment, upgrade and testing for Juju.
 
-At [HUNT Cloud](https://www.ntnu.edu/huntgenes/hunt-cloud) we run our scientific services based on OpenStack orchestrated by Juju. Such cloud deployments rely on a large set of collaborative softwares, and upgrades can sometimes cause considerable pain. We are therefore introducing Jujuna - a tool to simplify the validation of Juju-based OpenStack upgrades.
+At [HUNT Cloud](https://www.ntnu.edu/huntgenes/hunt-cloud) we run our scientific services based on OpenStack orchestrated by Juju. Such cloud deployments rely on a large set of collaborative softwares, and upgrades can sometimes cause considerable pain. We have therefore introduced Jujuna - a tool to simplify the validation of Juju-based OpenStack upgrades.
 
 New to [Juju](https://jujucharms.com/)? Juju is a cool controller and agent based tool from Canonical to easily deploy and manage applications (called Charms) on different clouds and environments (see [how it works](https://jujucharms.com/how-it-works) for more details).
 
