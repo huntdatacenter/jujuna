@@ -80,7 +80,7 @@ async def upgrade(
         try:
             if settings:
                 with open(settings.name, 'r') as stream:
-                    settings_data = yaml.load(stream)
+                    settings_data = yaml.full_load(stream)
         except yaml.YAMLError as e:
             log.warn('Failed to load settings file: {}'.format(str(e)))
 
