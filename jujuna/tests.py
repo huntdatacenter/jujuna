@@ -93,7 +93,7 @@ async def test(
         ):
             log.info('All juju apps state to be alive and active.')
         else:
-            log.info('Finished with errors: Alive: {} Status: {}'.format(dict(alive), dict(status)))
+            log.warning('Finished with errors: Alive: {} Status: {}'.format(dict(alive), dict(status)))
 
         log.info('[FINISHED] Passed tests: {} Failed tests: {}'.format(model_passed, model_failed))
 
@@ -147,13 +147,15 @@ async def execute_brokers(app_test_suite, unit, idx):
 
     for test_case in app_test_suite.keys():
         if test_case in broker_map.keys():
+            log.info('[{}]: {}'.format(unit.entity_id, test_case))
             rows = await broker_map[test_case]().run(app_test_suite[test_case], unit, idx)
             for row in rows:
-                log.info('[{}]: {} {} [{}]'.format(unit.entity_id, test_case, row[1], "Pass" if row[2] else "Fail"))
                 if row[2]:
+                    log.info('[{}]: {} {} [{}]'.format(unit.entity_id, test_case, row[1], "Pass"))
                     passed += 1
                 else:
+                    log.warning('[{}]: {} {} [{}]'.format(unit.entity_id, test_case, row[1], "Fail"))
                     failed += 1
         else:
-            log.info("TEST: Skipped (Broker '{}' not registered)".format(test_case))
+            log.warning("TEST: Skipped (Broker '{}' not registered)".format(test_case))
     return passed, failed

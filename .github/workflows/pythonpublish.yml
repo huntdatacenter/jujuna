@@ -24,5 +24,5 @@ jobs:
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: echo "check tags" && [[ "${GITHUB_REF}" =~ "refs/tags/"* ]] && twine upload dist/* || echo "not publishing"
+      run: echo "check ref: ${GITHUB_REF}" && [[ "${GITHUB_REF}" =~ "refs/tags/"* ]] && twine upload dist/* || echo "not publishing"
       shell: bash
