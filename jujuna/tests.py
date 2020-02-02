@@ -49,7 +49,7 @@ async def test(
     if test_suite:
         with open(test_suite.name, 'r') as stream:
             try:
-                suite = yaml.load(stream)
+                suite = yaml.full_load(stream)
             except yaml.YAMLError as exc:
                 log.error(exc)
 
