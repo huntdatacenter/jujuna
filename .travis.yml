@@ -17,6 +17,7 @@ script:
   - tox
   - tox -e lint
   - tox -e docs
+  - export SNAPCRAFT_PROJECT_VERSION=$(cat VERSION) && envsubst < snap/snapcraft.yaml.tpl > snap/snapcraft.yaml
   - if [[ "$BUILD_SNAP" == true ]]; then snapcraft; fi
 deploy:
   provider: snap
