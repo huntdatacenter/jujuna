@@ -27,9 +27,10 @@ class Network(Broker):
                     results = {'sockets': []}
                 # print(results)
 
-                local_ports = [s['local_port'] for s in results['sockets']]
+                local_ports = [str(s['local_port']) for s in results['sockets']]
 
-                for port in test_case['port']:
-                    rows.append((idx, '{}.{} == {}'.format('port', port, 'open'), port in local_ports), )
+                for port, open in test_case['port'].items():
+                    status = 'open' if open else 'closed'
+                    rows.append((idx, '{}.{} == {}'.format('port', port, status), (str(port) in local_ports) == open), )
 
         return rows

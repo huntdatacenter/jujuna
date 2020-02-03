@@ -25,7 +25,8 @@ class Process(Broker):
                 log.debug(exc)
                 results = {}
             # print(results)
-            for condition in test_case:
-                rows.append((idx, '{} == present'.format(condition), condition in results), )
+            for condition, present in test_case.items():
+                status = 'present' if present else 'absent'
+                rows.append((idx, '{} == {}'.format(condition, status), (condition in results) == present), )
 
         return rows

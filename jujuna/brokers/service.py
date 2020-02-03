@@ -27,11 +27,15 @@ class Service(Broker):
             # print(results['services'])
             # print(test_case)
             for service, condition in test_case.items():
-                rows.append((idx, '{} == {}'.format(service, 'exists'), service in results['services']), )
                 for c, v in condition.items():
-                    rows.append((
-                        idx, '{}.{} == {}'.format(service, c, v),
-                        service in results['services'] and results['services'][service][c] == v
-                    ), )
+                    if c == 'exists':
+                        rows.append((
+                            idx, '{}.{} == {}'.format(service, c, v), (service in results['services']) == v
+                        ), )
+                    else:
+                        rows.append((
+                            idx, '{}.{} == {}'.format(service, c, v),
+                            service in results['services'] and results['services'][service][c] == v
+                        ), )
 
         return rows
