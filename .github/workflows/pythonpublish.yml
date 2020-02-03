@@ -3,7 +3,7 @@ name: Upload Python Package
 on:
   push:
     branches:
-      - master
+      - refs/tags/*
 
 jobs:
   deploy:
@@ -24,5 +24,7 @@ jobs:
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: echo "check ref: ${GITHUB_REF}" && [[ "${GITHUB_REF}" =~ "refs/tags/"* ]] && twine upload dist/* || echo "not publishing"
+      run: |
+        echo "check: ${GITHUB_REF} - $(cat VERSION)"
+        [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && twine upload dist/* || echo "not publishing"
       shell: bash
