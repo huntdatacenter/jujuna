@@ -46,12 +46,17 @@ async def test(
     :param password: string
     :param cacert: string
     """
+    log.info('Load tests')
     if test_suite:
         with open(test_suite.name, 'r') as stream:
             try:
                 suite = yaml.full_load(stream)
+                suite_apps = suite.keys()
             except yaml.YAMLError as exc:
                 log.error(exc)
+                suite_apps = []
+
+    log.info('Applications: {}'.format(', '.join(suite_apps)))
 
     controller, model = await connect_juju(
         ctrl_name,
@@ -69,7 +74,15 @@ async def test(
         for app_name, app in model.applications.items():
             if suite and app_name in suite:
                 app_passed, app_failed = 0, 0
-                log.info('[{}]: {} {} [{}]'.format(app_name, app.status, app.alive, len(app.units)))
+                try:
+                    test_cases = len([
+                        key for x in suite[app_name].values() for y in x.values() if isinstance(x, dict) for key in y
+                    ])
+                except Exception:
+                    test_cases = 0
+                log.info('{} - {} - {} units - {} tests - {} {}'.format(
+                    "----", app_name, len(app.units), test_cases, app.status, app.alive
+                ))
                 for idx, unit in enumerate(app.units):
                     async with async_timeout.timeout(60):
                         passed, failed = await execute_brokers(suite[app_name], unit, idx)
@@ -79,7 +92,8 @@ async def test(
                             failed_units.add(unit.name)
                 model_passed += app_passed
                 model_failed += app_failed
-                log.info('[{}]: Passed: {} Failed: {}'.format(app_name, app_passed, app_failed))
+                log.info('{} - {}: Passed tests: {}'.format("====", app_name, app_passed))
+                log.info('{} - {}: Failed tests: {}'.format("====", app_name, app_failed))
 
         alive = defaultdict(int)
         status = defaultdict(int)
@@ -93,9 +107,15 @@ async def test(
         ):
             log.info('All juju apps state to be alive and active.')
         else:
-            log.info('Finished with errors: Alive: {} Status: {}'.format(dict(alive), dict(status)))
+            log.warning('Finished with errors')
+            log.warning('Alive: {}'.format(dict(alive)))
+            log.warning('Status: {}'.format(dict(status)))
 
-        log.info('[FINISHED] Passed tests: {} Failed tests: {}'.format(model_passed, model_failed))
+        log.info('{}: {}'.format("Passed tests", model_passed))
+        if model_failed:
+            log.warning('{}: {}'.format("Failed tests", model_failed))
+        else:
+            log.info('{}: {}'.format("Failed tests", model_failed))
 
     except JujuError as e:
         log.error('JujuError during tests')
@@ -147,13 +167,15 @@ async def execute_brokers(app_test_suite, unit, idx):
 
     for test_case in app_test_suite.keys():
         if test_case in broker_map.keys():
+            # log.info('{} - {}: {}'.format("unit", unit.entity_id, test_case))
             rows = await broker_map[test_case]().run(app_test_suite[test_case], unit, idx)
             for row in rows:
-                log.info('[{}]: {} {} [{}]'.format(unit.entity_id, test_case, row[1], "Pass" if row[2] else "Fail"))
                 if row[2]:
+                    log.info('{} - {}: {} {}'.format("PASS", unit.entity_id, test_case, row[1]))
                     passed += 1
                 else:
+                    log.info('{} - {}: {} {}'.format("FAIL", unit.entity_id, test_case, row[1]))
                     failed += 1
         else:
-            log.info("TEST: Skipped (Broker '{}' not registered)".format(test_case))
+            log.warning("TEST: Skipped (Broker '{}' not registered)".format(test_case))
     return passed, failed

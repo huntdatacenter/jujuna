@@ -13,10 +13,10 @@ Example 1 - Bundle of glance and openstack::
         glance-registry:
           status: 'running'
       process:
-        - 'glance-api'
+        glance-api: True
       network:
         port:
-          - 9292
+          '9292': True
     mysql-db:
       service:
         mysql:
