@@ -17,7 +17,7 @@ script:
   - tox
   - tox -e lint
   - tox -e docs
-  - if [[ "$BUILD_SNAP" == true ]]; then snapcraft; fi
+  - if [[ "$BUILD_SNAP" == true ]]; then export SNAPCRAFT_PROJECT_VERSION=$(cat VERSION); snapcraft; fi
 deploy:
   provider: snap
   snap: jujuna_*_amd64.snap

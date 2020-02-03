@@ -1,6 +1,6 @@
 name: jujuna
 base: core18
-version: '0.2.4'
+version: "${SNAPCRAFT_PROJECT_VERSION}"
 summary: Jujuna, continuous deployment, upgrade and testing for Juju.
 description: |
   Jujuna, continuous deployment, upgrade and testing for Juju.
