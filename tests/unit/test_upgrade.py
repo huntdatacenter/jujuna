@@ -3,7 +3,8 @@ Tests for upgrade action.
 
 """
 
-from jujuna.upgrade import perform_upgrade
+from jujuna.helper import cs_name_parse
+from jujuna.upgrade import upgrade, upgrade_charms, perform_upgrade
 from unittest.mock import patch
 from unittest import TestCase
 from collections import namedtuple
@@ -20,6 +21,84 @@ class TestUpgrade(TestCase):
     """Test upgrade action.
 
     """
+
+    @patch('asyncio.sleep', new=AsyncMock())
+    @patch('jujuna.upgrade.wait_until', new=AsyncMock())
+    @patch('jujuna.upgrade.connect_juju', new=AsyncMock())
+    @patch('jujuna.upgrade.upgrade_charms', new=AsyncMock())
+    @patch('jujuna.upgrade.upgrade_services', new=AsyncMock())
+    def test_perform_upgrade_call(
+        self
+    ):
+        """Testing upgrade parser."""
+        from jujuna.upgrade import connect_juju, upgrade_charms, upgrade_services
+
+        upgrade_apps = ['cs:xenial/test-12', 'glance']
+        upgrade_apps_cs = [cs_name_parse('cs:xenial/test-12'), cs_name_parse('glance')]
+        upgrade_srvcs = ['test', 'glance']
+
+        upgrade_charms.mock.return_value = (['test', 'glance'], [])
+
+        app1 = AsyncClassMock(static=['status'])
+        app2 = AsyncClassMock(static=['status'])
+        model = AsyncClassMock(
+            static=['disconnect'],
+            props={'applications': {'test': app1, 'glance': app2}}
+        )
+        controller = AsyncClassMock(static=['disconnect'])
+
+        connect_juju.mock.return_value = (controller, model)
+
+        loop(upgrade(
+            apps=upgrade_apps,
+            origin_keys='origin_keys'
+        ))
+
+        upgrade_charms.mock.assert_called_once_with(
+            model, upgrade_apps_cs, False, False
+        )
+        upgrade_services.mock.assert_called_once_with(
+            model, upgrade_srvcs, '', 'origin_keys', '', {}, False, False
+        )
+
+    @patch('asyncio.sleep', new=AsyncMock())
+    @patch('jujuna.upgrade.wait_until', new=AsyncMock())
+    def test_perform_upgrade_charms(
+        self
+    ):
+        """Testing upgrade parser."""
+        from jujuna.upgrade import wait_until
+
+        upgrade_apps = [cs_name_parse('cs:xenial/test-12'), cs_name_parse('glance')]
+
+        unit = AsyncClassMock(static=['run_action'], props={
+            'name': 'test/0',
+            'workload_status': 'active',
+            'workload_status_message': 'ready'
+        })
+        app1 = AsyncClassMock(
+            static=['set_config', 'get_config', 'upgrade_charm'],
+            props={'name': 'test', 'units': [unit], 'relations': [], 'data': {'charm-url': 'cs:xenial/test-3'}}
+        )
+        app2 = AsyncClassMock(
+            static=['set_config', 'get_config', 'upgrade_charm'],
+            props={'name': 'glance', 'units': [unit], 'relations': [], 'data': {'charm-url': 'cs:xenial/glance-49'}}
+        )
+        model = AsyncClassMock(props={'applications': {'test': app1, 'glance': app2}, 'loop': None})
+
+        upgraded, latest_charms = loop(upgrade_charms(
+            model,
+            upgrade_apps,
+            dry_run=False,
+            ignore_errors=False
+        ))
+        self.assertEqual(upgraded, ['test', 'glance'])
+        self.assertEqual(latest_charms, [])
+        app1.upgrade_charm.mock.assert_called_once_with(revision=12)
+        app2.upgrade_charm.mock.assert_called_once_with(revision=None)
+        wait_until.mock.assert_called_once_with(
+            model, list(model.applications.values()), loop=None, timeout=1800
+        )
 
     @patch('asyncio.sleep', new=AsyncMock())
     @patch('jujuna.upgrade.wait_until', new=AsyncMock())
