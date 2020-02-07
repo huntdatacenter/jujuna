@@ -82,7 +82,10 @@ async def upgrade(
         try:
             if settings:
                 with open(settings.name, 'r') as stream:
-                    settings_data = yaml.full_load(stream)
+                    if hasattr(yaml, 'full_load'):
+                        settings_data = yaml.full_load(stream)
+                    else:
+                        settings_data = yaml.load(stream)
         except yaml.YAMLError as e:
             log.warn('Failed to load settings file: {}'.format(str(e)))
 
@@ -154,7 +157,7 @@ async def ocata_relation_patch(model, dry_run, cinder_ceph):
 
 
 def get_service_list(model, upgraded):
-    return [(name, get_service_version(model.applications.get(name, None))) for name in upgraded]
+    return [(name, get_service_version(model.applications[name])) for name in upgraded if name in model.applications]
 
 
 def get_service_version(application):
@@ -175,6 +178,8 @@ async def upgrade_services(model, upgraded, origin, origin_keys, upgrade_action,
     # upgrade_action is none by default, otherwise enforcing perform_upgrade
     use_action = upgrade_action if upgrade_action else 'openstack-upgrade'
     for app_name in upgraded:
+        if app_name not in model.applications:
+            continue
         rollable_app = await is_rollable(model.applications[app_name], use_action)
         if upgrade_action or rollable_app:
             await perform_upgrade(
@@ -247,10 +252,10 @@ async def upgrade_charms(model, apps, dry_run, ignore_errors):
             try:
                 if app_name.get('revision') is None:
                     charmstore_entity = await model.charmstore.entity(
-                        charm_url, include_stats=False, includes=['revision-info']
+                        parse['charm'], include_stats=False, includes=['revision-info']
                     )
-                    latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
-                    charm_id = cs_name_parse(latest)
+                    # latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
+                    charm_id = cs_name_parse(charmstore_entity['Id'])
                     target_revision = charm_id['revision']
                 else:
                     target_revision = app_name['revision']
