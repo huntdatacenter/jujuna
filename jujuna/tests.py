@@ -50,7 +50,10 @@ async def test(
     if test_suite:
         with open(test_suite.name, 'r') as stream:
             try:
-                suite = yaml.full_load(stream)
+                if hasattr(yaml, 'full_load'):
+                    suite = yaml.full_load(stream)
+                else:
+                    suite = yaml.load(stream)
                 suite_apps = suite.keys()
             except yaml.YAMLError as exc:
                 log.error(exc)

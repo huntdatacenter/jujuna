@@ -22,19 +22,35 @@ def log_traceback(ex, prefix=''):
 def cs_name_parse(name, series=None):
     """Charm store name parse.
 
+    Parse charm name, series, and revision.
+    Charmstore variable differs source from local charm.
+
+    :param name string: charm name or url e.g. cs:xenial/glance-35
+    :param series string: series name e.g. bionic
+    :return dict: with keys series, charm, revision, and charmstore
     """
     try:
-        cscode, csuri = name.split(':', 1)
-        items = csuri.split('/') if '/' in csuri else ['', csuri]
+        cscode, csuri = name.split(':', 1) if ':' in name else ['cs', name]
+        is_path = (cscode == 'local') or csuri.startswith('/') or csuri.startswith('./')
+        uri_series, csuri = csuri.split('/', 1) if (
+            '/' in csuri and not is_path
+        ) else ['', csuri]
+        items = csuri.split('-')
+        revision = int(items[-1]) if items[-1].isdigit() else None
         return {
-            'series': items[0] if items[0] or not series else series,
-            'charm': '-'.join(items[1].split('-')[:-1]),
-            'revision': int(items[1].split('-')[-1]),
-            'charmstore': False if cscode == 'local' else True
+            'series': uri_series if uri_series and not series else series,
+            'charm': '-'.join(items if revision is None else items[:-1]),
+            'revision': revision,
+            'charmstore': False if is_path else True
         }
     except Exception:
-        logging.warn('Failed to parse Charm name: {}'.format(name))
-        return {}
+        logging.warning('Failed to parse Charm name: {}'.format(name))
+        return {
+            'series': None,
+            'charm': name,
+            'revision': None,
+            'charmstore': False
+        }
 
 
 async def connect_juju(ctrl_name=None, model_name=None, endpoint=None, username=None, password=None, cacert=None):

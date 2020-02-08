@@ -73,14 +73,19 @@ async def upgrade(
     )
 
     try:
-        log.info('Applications present in the current model: {}'.format(', '.join(list(model.applications.keys()))))
+        log.info('Applications present in the current model: {}'.format(
+            ', '.join(list(model.applications.keys()))
+        ))
 
         settings_data = {}
 
         try:
             if settings:
                 with open(settings.name, 'r') as stream:
-                    settings_data = yaml.full_load(stream)
+                    if hasattr(yaml, 'full_load'):
+                        settings_data = yaml.full_load(stream)
+                    else:
+                        settings_data = yaml.load(stream)
         except yaml.YAMLError as e:
             log.warn('Failed to load settings file: {}'.format(str(e)))
 
@@ -96,7 +101,9 @@ async def upgrade(
         log.info('Services to upgrade: {}'.format(', '.join(services)))
         if add_services and not upgrade_only:
             log.info('Charms only upgrade: {}'.format(', '.join(add_services)))
-        all_services = services + add_services
+        all_services = [cs_name_parse(serv) for serv in services]
+        applications = [serv['charm'] for serv in all_services]
+        all_services.extend([cs_name_parse(serv) for serv in add_services])
 
         # Upgrade charm revisions
         if not upgrade_only:
@@ -105,16 +112,16 @@ async def upgrade(
             )
 
         # Ocata upgrade requires additional relation to succeed
-        if not charms_only and origin == 'cloud:xenial-ocata' and 'nova-compute' in services:
-            if 'cinder-warmceph' in services:
+        if not charms_only and origin == 'cloud:xenial-ocata' and 'nova-compute' in applications:
+            if 'cinder-warmceph' in applications:
                 await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-warmceph')
-            elif 'cinder-ceph' in services:
+            elif 'cinder-ceph' in applications:
                 await ocata_relation_patch(model, dry_run, cinder_ceph='cinder-ceph')
 
-        # Upgrade services
+        # Upgrade applications
         if not charms_only:
             await upgrade_services(
-                model, services, origin, origin_keys, upgrade_action, upgrade_params, pause, dry_run
+                model, applications, origin, origin_keys, upgrade_action, upgrade_params, pause, dry_run
             )
 
         # Log status values
@@ -150,7 +157,7 @@ async def ocata_relation_patch(model, dry_run, cinder_ceph):
 
 
 def get_service_list(model, upgraded):
-    return [(name, get_service_version(model.applications.get(name, None))) for name in upgraded]
+    return [(name, get_service_version(model.applications[name])) for name in upgraded if name in model.applications]
 
 
 def get_service_version(application):
@@ -171,6 +178,8 @@ async def upgrade_services(model, upgraded, origin, origin_keys, upgrade_action,
     # upgrade_action is none by default, otherwise enforcing perform_upgrade
     use_action = upgrade_action if upgrade_action else 'openstack-upgrade'
     for app_name in upgraded:
+        if app_name not in model.applications:
+            continue
         rollable_app = await is_rollable(model.applications[app_name], use_action)
         if upgrade_action or rollable_app:
             await perform_upgrade(
@@ -222,50 +231,62 @@ async def upgrade_charms(model, apps, dry_run, ignore_errors):
     log.info('Upgrading charms')
     upgraded = []
     latest_charms = []
+    failed_upgrade = False
 
     for app_name in apps:
-        if app_name not in model.applications:
-            log.warn('Unable to find application: {}'.format(app_name))
+        attemp_update = False
+        target_revision = None
+
+        if app_name['charm'] not in model.applications:
+            log.warning('Unable to find application: {}'.format(app_name['charm']))
             continue
 
         # Get charm url and parse current revision
-        charm_url = model.applications[app_name].data['charm-url']
+        charm_url = model.applications[app_name['charm']].data['charm-url']
         parse = cs_name_parse(charm_url)
+        current_revision = parse['revision'] if parse['revision'] else 0
+        app = model.applications[app_name['charm']]
 
         # Charmstore get latest revision
         if parse.get('charmstore', False):
             try:
-                charmstore_entity = await model.charmstore.entity(
-                    charm_url,
-                    include_stats=False,
-                    includes=['revision-info']
-                )
-                latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
-                latest_revision = cs_name_parse(latest)
-                attemp_update = False
+                if app_name.get('revision') is None:
+                    charmstore_entity = await model.charmstore.entity(
+                        parse['charm'], include_stats=False, includes=['revision-info']
+                    )
+                    # latest = charmstore_entity['Meta']['revision-info']['Revisions'][0]
+                    charm_id = cs_name_parse(charmstore_entity['Id'])
+                    target_revision = charm_id['revision']
+                else:
+                    target_revision = app_name['revision']
             except Exception:
-                log.warn('Failed loading information from charmstore: {}'.format(charm_url))
-                latest_revision = {'revision': 0}
+                log.warning('Failed loading information from charmstore: {}'.format(charm_url))
                 attemp_update = True
         else:
             log.info('Not upgrading local charm: {}'.format(charm_url))
-            latest_revision = {'revision': 0}
-            attemp_update = False
 
         # Update if not newest or attempt to update if failed to find charmstore latest revision
-        if (
-            (parse['revision'] < latest_revision['revision']) or attemp_update
-        ):
-            log.info('Upgrade {} from: {} to: {}'.format(app_name, parse['revision'], latest_revision['revision']))
+        if (target_revision is not None and current_revision < target_revision) or attemp_update:
+            log.info('Upgrade {} from: {} to: {}'.format(
+                app_name['charm'], current_revision,
+                'latest' if target_revision is None else target_revision
+            ))
             try:
                 if not dry_run:
-                    await model.applications[app_name].upgrade_charm()
+                    await app.upgrade_charm(
+                        revision=target_revision
+                    )
                     await asyncio.sleep(30)
-                upgraded.append(app_name)
+                upgraded.append(app_name['charm'])
             except JujuError:
-                log.warn('Not upgrading: {}'.format(app_name))
+                log.warning('Not upgrading: {}'.format(app_name['charm']))
+            except Exception:
+                log.error('Failed upgrading: {}'.format(app_name['charm']))
+                if not ignore_errors:
+                    failed_upgrade = True
+                    break
         else:
-            latest_charms.append(app_name)
+            latest_charms.append(app_name['charm'])
 
     log.info('Upgraded: {} charms'.format(len(upgraded)))
 
@@ -273,7 +294,7 @@ async def upgrade_charms(model, apps, dry_run, ignore_errors):
         await asyncio.sleep(20)
         await wait_until(
             model,
-            model.applications.values(),
+            list(model.applications.values()),
             timeout=1800,
             loop=model.loop
         )
@@ -292,8 +313,8 @@ async def upgrade_charms(model, apps, dry_run, ignore_errors):
     log.info('Status of units after revision upgrade: {}'.format(dict(wss)))
     log.info('Workload messages: {}'.format(dict(wsm)))
 
-    if not ignore_errors and 'error' in wss.keys():
-        raise Exception('Errors during upgrading charms to latest revision')
+    if not ignore_errors and (failed_upgrade or 'error' in wss.keys()):
+        raise Exception('Errors during upgrade of charm revisions')
     return upgraded, latest_charms
 
 

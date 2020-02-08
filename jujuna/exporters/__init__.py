@@ -60,7 +60,7 @@ class Exporter():
             except Exception as exc:
                 # Try 3 times, if it fails raise on last
                 if i == 2 and 'No such file' not in str(exc):
-                    log.warn('Unload failed: {}'.format(str(exc)))
+                    log.warning('Unload failed: {}'.format(str(exc)))
                     log.debug(exc)
         # ret = await unit.run('rm /tmp/*.py', timeout=3)
         if (
