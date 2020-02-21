@@ -3,7 +3,7 @@
 import asyncio
 import websockets
 import logging
-from jujuna.helper import connect_juju
+from jujuna.helper import connect_juju, log_traceback
 from juju.errors import JujuError
 from juju.client import client
 
@@ -88,7 +88,13 @@ async def clean(
             else:
                 log.info('Remove {} from model'.format(app))
                 if not dry_run:
-                    await model.applications[app].destroy()
+                    try:
+                        await model.applications[app].destroy()
+                    except KeyError:
+                        pass
+                    except Exception as e:
+                        log.error(str(e))
+                        log_traceback(e)
 
         if not ignore and force:
             facade = client.ClientFacade.from_connection(model.connection())
