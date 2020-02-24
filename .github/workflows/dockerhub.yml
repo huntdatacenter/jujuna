@@ -1,0 +1,57 @@
+name: Docker
+
+on:
+  create:
+    tags:
+      - refs/tags/*
+
+env:
+  IMAGE_NAME: jujuna
+
+jobs:
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+#   test:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - name: Run tests
+#         run: |
+#           if [ -f docker-compose.test.yml ]; then
+#             docker-compose --file docker-compose.test.yml build
+#             docker-compose --file docker-compose.test.yml run sut
+#           else
+#             docker build . --file Dockerfile
+#           fi
+
+  # Push image to GitHub Package Registry.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+    # Ensure test job passes before pushing image.
+    # needs: test
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build --tag huntdatacenter/${{ github.repository }}:latest . --file Dockerfile
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          VERSION=$(cat VERSION)
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && docker tag $IMAGE_ID:latest $IMAGE_ID:$VERSION
+          [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && docker push $IMAGE_ID:$VERSION
+          [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && docker push $IMAGE_ID:latest
