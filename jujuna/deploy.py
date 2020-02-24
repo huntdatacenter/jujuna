@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
-import asyncio
-import websockets
 import logging
-from collections import Counter
-from jujuna.helper import connect_juju, log_traceback
+from jujuna.helper import connect_juju, log_traceback, ApperrorTimeout, wait_until
 from juju.errors import JujuError
+from websockets import ConnectionClosed
 
 
 # create logger
@@ -21,6 +19,7 @@ async def deploy(
     username='',
     password='',
     cacert='',
+    error_timeout=None,
     **kwargs
 ):
     """Deploy a local juju bundle.
@@ -39,6 +38,7 @@ async def deploy(
     :param password: string
     :param cacert: string
     """
+    ret = 0
     log.info('Reading bundle: {}'.format(bundle_file.name))
     entity_url = 'local:' + bundle_file.name.replace('/bundle.yaml', '')
 
@@ -57,74 +57,36 @@ async def deploy(
         deployed_apps = await model.deploy(
             entity_url
         )
+        if not isinstance(deployed_apps, list):
+            deployed_apps = [deployed_apps]
 
         if wait:
             await wait_until(
                 model,
                 deployed_apps,
-                loop=model.loop
+                log,
+                loop=model.loop,
+                error_timeout=error_timeout
             )
-        try:
-            d = Counter([a.status for a in deployed_apps])
-        except Exception:
-            log.error('Collecting status failed')
-            d = {}
-        log.info('{} - Machines: {} Apps: {} Stats: {}'.format(
-            'DEPLOYED' if wait else 'CURRENT',
-            len(model.machines),
-            len(model.applications),
-            dict(d)
-        ))
+        else:
+            log.info('{} - Apps: {}'.format(
+                'DEPLOYED',
+                len(deployed_apps)
+            ))
 
+    except ApperrorTimeout:
+        ret = 124
+        log.error('FAILED - Application too long in error state')
+    except ConnectionClosed as e:
+        ret = 1
+        log.error('FAILED - Connection closed')
+        log_traceback(e)
     except JujuError as e:
+        ret = 1
         log.error('JujuError during deploy')
         log_traceback(e)
     finally:
         # Disconnect from the api server and cleanup.
         await model.disconnect()
         await controller.disconnect()
-
-
-async def wait_until(model, apps, log_time=5, timeout=None, wait_period=0.5, loop=None):
-    """Blocking with logs.
-
-    Return only after all conditions are true.
-
-    :param model: juju model
-    :param apps: juju application
-    :param log_time: logging frequency (s)
-    :param timeout: blocking timeout (s)
-    :param wait_period: waiting time between checks (s)
-    :param loop: asyncio event loop
-    """
-    log_count = 0
-
-    def _disconnected():
-        return not (model.is_connected() and model.connection().is_open)
-
-    async def _block(log_count):
-        blockable = ['maintenance', 'blocked', 'waiting', 'error']
-        while (
-            not _disconnected() and
-            any(a.status != 'active' for a in apps) and
-            any(u.workload_status in blockable for a in apps for u in a.units)
-        ):
-            await asyncio.sleep(wait_period, loop=loop)
-            log_count += 0.5
-            if log_count % log_time == 0:
-                ass = Counter([
-                    a.status for a in apps
-                ])
-                wss = Counter([
-                    unit.workload_status for a in apps for unit in a.units
-                ])
-                log.info('PROGRESS - Machines: {} Apps: {} Stats: {} Workload: {}'.format(
-                    len(model.machines),
-                    len(model.applications),
-                    dict(ass),
-                    dict(wss)
-                ))
-    await asyncio.wait_for(_block(log_count), timeout, loop=loop)
-
-    if _disconnected():
-        raise websockets.ConnectionClosed(1006, 'no reason')
+    return ret
