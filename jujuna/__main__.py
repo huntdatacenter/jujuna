@@ -48,7 +48,7 @@ def get_parser():
     p_deploy.add_argument("-m", "--model", default=None, dest="model_name", help="Model to use instead of current")
     p_deploy.add_argument("-w", "--wait", action='store_true', help="Wait for deploy to finish")
     p_deploy.add_argument("-t", "--timeout", default=0, type=int, help="Timeout after N seconds.")
-    p_deploy.add_argument("--error-timeout", default=0, dest="error_timeout", type=int,
+    p_deploy.add_argument("--error-timeout", default=1800, dest="error_timeout", type=int,
                           help="Timeout after N seconds in error state.")
     p_deploy.add_argument("--endpoint", default=None, dest="endpoint",
                           help="Juju endpoint (requires model uuid instead of name)")
