@@ -151,7 +151,7 @@ def log_workload(
     logger, model, apps, label='PROGRESS', status=True, workload=True, error_status=False, unit_status=False
 ):
     if status:
-        ass = dict(Counter([a.status for a in apps]))
+        ass = dict(Counter([a.status if a.status else 'none' for a in apps]))
         ass = 'Status: {}'.format(','.join([
             '{}={}'.format(k, v) for k, v in ass.items()
         ])) if ass else 'Status: None'
@@ -159,7 +159,7 @@ def log_workload(
         ass = ''
     if workload:
         wss = Counter([
-            unit.workload_status for a in apps for unit in a.units
+            unit.workload_status if unit.workload_status else 'none' for a in apps for unit in a.units
         ])
         wss = 'Workload: {}'.format(','.join([
             '{}={}'.format(k, v) for k, v in wss.items()
