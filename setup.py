@@ -35,11 +35,20 @@ SETUP = {
         "Environment :: Console"
     ],
     'install_requires': [
-        'pyyaml',
-        'async-timeout==2.0.1',
-        'juju>=0.10.2',
-        'argcomplete'
+        'async-timeout<=3.99,>=2.0.1',
+        'argcomplete==1.10.0',
+        'theblues==0.5.2'
     ],
+    'extras_require': {
+        ":python_version>'3.5.2'": [
+            'juju<=2.7.99,>=2.7.1',
+            'pyyaml<=6.0,>=3.0',
+        ],
+        ":python_version<='3.5.2'": [
+            'juju==0.11.7',
+            'pyyaml<=4.2,>=3.0',
+        ]
+    }
 }
 
 

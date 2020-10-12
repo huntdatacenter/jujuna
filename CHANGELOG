@@ -4,11 +4,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.7] - 2020-03-01
 ### Changed
-- List yet unreleased changes.
+- add tcp6 file as a source for open ports in network exporter
+
+## [0.2.6] - 2020-02-24
+### Changed
+- deploy adds error-timeout to fail with timeout in case app stays too long in error status
+- changed wait delays before reporting deploy is considered finished, to cope with slower reactive changes
+
+## [0.2.5] - 2020-02-07
+### Changed
+- review upgrade
+- upgrade now supports charm uri with target revision number
+- tests for upgrades
+
+## [0.2.4] - 2020-02-03
+### Changed
+- review testing
+- patch yaml load deprecation
+
+## [0.2.3] - 2020-01-10
+### Changed
+- upping dependencies for python-libjuju to 2.7.1
+
+## [0.2.2] - 2020-01-07
+### Changed
+- update dependencies after python-libjuju 2.7.0 was released
+- libjuju is fixing options for storage and resources in bundles
+
+## [0.2.1] - 2019-12-06
+### Changed
+- clean is calling destroy machine without waiting for result when force - there was extra wait avoided from libjuju
+- we get to use current machines in clean
+- Examples now use bionic and juju 2.7
+- Dockerfile adds gettext-base - with envsubst if you change bundles with makefile or similar
+
+## [0.2.0] - 2019-11-16
+### Changed
+- Dependency versions updated to current libjuju (waiting only for macaroonbakery to also support python 3.8)
+- Allow upgrade without using origin - if not supported by charm - origin now has to be specified explicitly
+- Charm upgrade does not check locally built ('local:app') charms
+- When using upgrade-only, charms are not compared with charmstore versions, skipping straight to upgrade of services
+- Improved wait on charm config change when setting origin
+### Added
+- Support passing of --cacert $CACERT parameter in authentication using libjuju when accessing from remote machine
+- Origin keys can be specified as parameter (key=value,key2=value2)
+- Upgrade action name as parameters - defaulting to 'openstack-upgrade' in perform_upgrade
+- Support key value parameters for upgrade action (key=value,key2=value2)
+- Debug parameter - default log level without debug is INFO
+- Async (class) methods mocking for unit-testing of jujuna code
+- Tests for upgrade - perform_upgrade (covering simple, rolling and hacluster cases)
 
 ## [0.1.0] - 2018-10-24
 ### Added
 - Initial opensourcing commit
-

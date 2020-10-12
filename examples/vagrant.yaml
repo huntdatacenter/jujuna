@@ -1,0 +1,131 @@
+- hosts: all
+  become: yes
+
+  vars:
+    user: vagrant
+    group: vagrant
+
+  tasks:
+    - name: Add `watch-juju` alias and snap path to .bashrc
+      blockinfile:
+        path: "/home/{{ user }}/.bashrc"
+        content: |
+          # Add alias for easy watching of juju status
+          alias watch-juju='watch --color -n1 juju status --color'
+          # Add snaps to path
+          export PATH=/snap/bin:$PATH
+
+    - name: Install and configure snaps - juju 2.4 (xenial)
+      block:
+
+        - name: Install packages (xenial)
+          apt:
+            name: ["zfsutils-linux", "apt-cacher-ng", "python3", "python3-pip", "lxd", "lxd-client"]
+            state: latest
+            default_release: xenial-backports
+
+        - name: Install juju 2.4/stable snap (xenial)
+          command: snap install juju --classic --channel=2.4/stable
+
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'xenial'
+
+    - name: Install and configure snaps - juju 2.7 (bionic)
+      block:
+
+        - name: Install packages
+          apt:
+            name: ["zfsutils-linux", "apt-cacher-ng", "python3", "python3-pip"]
+            state: latest
+
+        - name: Install lxd snap (https://jaas.ai/docs/lxd-cloud#heading--installing-lxd)
+          snap:
+            name: lxd
+            state: present
+          register: lxdsnap
+
+        - name: Sleep for 10 seconds for systemd to handle LXD service state
+          wait_for:
+            timeout: 30
+          when: lxdsnap.changed
+
+        - name: Assure service lxd is started
+          service:
+            name: lxd
+            state: started
+          when: lxdsnap.changed
+
+        - name: Assure service snap.lxd.daemon is started
+          service:
+            name: snap.lxd.daemon
+            state: started
+
+        - name: Migrate lxd from apt to snap
+          command: "/snap/bin/lxd.migrate -yes"
+          when: lxdsnap.changed
+
+        - name: Assure apt LXD purged
+          apt:
+            name: ["liblxc1", "lxcfs", "lxd", "lxd-client"]
+            state: absent
+            purge: true
+
+        - name: Install juju 2.7/stable snap
+          command: snap install juju --classic --channel=2.7/stable
+
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'bionic'
+
+    - name: Run juju to generate juju dir
+      command: /snap/bin/juju
+      become_user: "{{ user }}"
+      args:
+        creates: ~/.local/share/juju
+
+    - name: Setup lxd
+      command: "{{ item }}"
+      with_items:
+        - lxd init --auto --storage-backend zfs --storage-create-loop 30 --storage-pool lxd
+        - lxc network set lxdbr0 ipv6.address none
+      ignore_errors: yes
+
+    - name: Configure apt-cacher-ng for https
+      lineinfile:
+        path: /etc/apt-cacher-ng/acng.conf
+        line: 'PassThroughPattern: .*'
+
+    - name: Restart apt-cacher-ng
+      service:
+        name: apt-cacher-ng
+        state: restarted
+
+    - name: Add apt proxy to juju config
+      blockinfile:
+        path: "/home/{{ user }}/.local/share/juju/clouds.yaml"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: 0600
+        create: yes
+        content: |
+          clouds:
+            lxd:
+              type: lxd
+              config:
+                apt-http-proxy: http://{{ ansible_default_ipv4.address }}:3142
+                apt-https-proxy: http://{{ ansible_default_ipv4.address }}:3142
+                enable-os-upgrade: false
+
+    - name: Upgrade pip
+      pip:
+        name: pip
+        executable: pip3
+        extra_args: --upgrade
+
+    - name: Install jujuna
+      pip:
+        name: jujuna
+        executable: pip3
+
+    - name: Bootstrap juju controller
+      command: juju bootstrap localhost lxd
+      become: yes
+      become_user: vagrant
+      ignore_errors: yes

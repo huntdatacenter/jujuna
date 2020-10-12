@@ -1,0 +1,7 @@
+keystone:
+  service:
+    apache2:
+      status: 'running'
+  file:
+    '/etc/keystone/keystone.conf':
+      is_reg: True

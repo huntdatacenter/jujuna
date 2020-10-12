@@ -2,6 +2,10 @@
 from . import Broker, python3, load_output
 from jujuna.exporters import Exporter
 import re
+import logging
+
+
+log = logging.getLogger('jujuna.tests.broker')
 
 
 class Mount(Broker):
@@ -15,8 +19,12 @@ class Mount(Broker):
         """Run tests."""
         rows = []
         async with Exporter(unit, self.named) as exporter:
-            act = await unit.run(python3(exporter), timeout=10)
-            results = load_output(act.data['results'])
+            try:
+                act = await unit.run(python3(exporter), timeout=10)
+                results = load_output(act.data['results'])
+            except Exception as exc:
+                log.debug(exc)
+                results = []
             # print(results.keys())
             if 'regex' in test_case:
                 for condition in test_case['regex']:
@@ -28,6 +36,8 @@ class Mount(Broker):
                         if var:
                             mounts = var.group(0)
 
-                    rows.append((idx, '{} == {}'.format(mounts, 'mounted'), True if mounts else False), )
+                    rows.append((idx, '{} == {}'.format(
+                        mounts if mounts else str(condition), 'mounted'
+                    ), True if mounts else False), )
 
         return rows

@@ -3,8 +3,9 @@
 import asyncio
 import websockets
 import logging
-from jujuna.helper import connect_juju
+from jujuna.helper import connect_juju, log_traceback
 from juju.errors import JujuError
+from juju.client import client
 
 
 # create logger
@@ -33,7 +34,7 @@ async def wait_until(model, *conditions, log_time=5, timeout=None, wait_period=0
     await asyncio.wait_for(_block(log_count), timeout, loop=loop)
 
     if _disconnected():
-            raise websockets.ConnectionClosed(1006, 'no reason')
+        raise websockets.ConnectionClosed(1006, 'no reason')
 
     log.info('[DONE] Machines: {} Apps: {}'.format(
         len(model.machines),
@@ -42,15 +43,17 @@ async def wait_until(model, *conditions, log_time=5, timeout=None, wait_period=0
 
 
 async def clean(
-    ctrl_name=None,
-    model_name=None,
+    ctrl_name='',
+    model_name='',
     ignore=[],
     wait=False,
     force=False,
     dry_run=False,
-    endpoint=None,
-    username=None,
-    password=None
+    endpoint='',
+    username='',
+    password='',
+    cacert='',
+    **kwargs
 ):
     """Destroy applications present in the current or selected model.
 
@@ -66,13 +69,15 @@ async def clean(
     :param endpoint: string
     :param username: string
     :param password: string
+    :param cacert: string
     """
     controller, model = await connect_juju(
         ctrl_name,
         model_name,
         endpoint=endpoint,
         username=username,
-        password=password
+        password=password,
+        cacert=cacert
     )
 
     try:
@@ -83,17 +88,23 @@ async def clean(
             else:
                 log.info('Remove {} from model'.format(app))
                 if not dry_run:
-                    await model.applications[app].destroy()
+                    try:
+                        await model.applications[app].destroy()
+                    except KeyError:
+                        pass
+                    except Exception as e:
+                        log.error(str(e))
+                        log_traceback(e)
 
         if not ignore and force:
-            machines = [m for m in model.machines.values() if 'arch' in m.safe_data['hardware-characteristics']]
-            for machine in machines:
-                log.info('Remove machine {} from model'.format(machine.entity_id))
+            facade = client.ClientFacade.from_connection(model.connection())
+            for machine in await model.get_machines():
+                log.info('Remove machine {} from model'.format(machine))
                 if not dry_run:
                     try:
-                        await machine.destroy(force=True)
+                        await facade.DestroyMachines(force=force, machine_names=[machine])
                     except Exception as e:
-                        log.warn('ERROR: {}'.format(e))
+                        log.warn('Removing machine from model failed or already removed. {}'.format(e))
 
         if wait and not ignore and not dry_run:
             await wait_until(

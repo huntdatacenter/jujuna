@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
-import asyncio
-import websockets
 import logging
-from collections import defaultdict
-from jujuna.helper import connect_juju
+from jujuna.helper import connect_juju, log_traceback, ApperrorTimeout, wait_until
 from juju.errors import JujuError
+from websockets import ConnectionClosed
 
 
 # create logger
@@ -14,12 +12,15 @@ log = logging.getLogger('jujuna.deploy')
 
 async def deploy(
     bundle_file,
-    ctrl_name=None,
-    model_name=None,
+    ctrl_name='',
+    model_name='',
     wait=False,
-    endpoint=None,
-    username=None,
-    password=None
+    endpoint='',
+    username='',
+    password='',
+    cacert='',
+    error_timeout=None,
+    **kwargs
 ):
     """Deploy a local juju bundle.
 
@@ -35,7 +36,9 @@ async def deploy(
     :param endpoint: string
     :param username: string
     :param password: string
+    :param cacert: string
     """
+    ret = 0
     log.info('Reading bundle: {}'.format(bundle_file.name))
     entity_url = 'local:' + bundle_file.name.replace('/bundle.yaml', '')
 
@@ -44,70 +47,46 @@ async def deploy(
         model_name,
         endpoint=endpoint,
         username=username,
-        password=password
+        password=password,
+        cacert=cacert
     )
 
     try:
         # Deploy a bundle
-        log.info("Deploy: {}.".format(entity_url))
-        deployed_app = await model.deploy(
+        log.info("Deploy: {}".format(entity_url))
+        deployed_apps = await model.deploy(
             entity_url
         )
+        if not isinstance(deployed_apps, list):
+            deployed_apps = [deployed_apps]
 
         if wait:
             await wait_until(
                 model,
-                deployed_app,
-                loop=model.loop
+                deployed_apps,
+                log,
+                loop=model.loop,
+                error_timeout=error_timeout
             )
+        else:
+            log.info('{} - Apps: {}'.format(
+                'DEPLOYED',
+                len(deployed_apps)
+            ))
+
+    except ApperrorTimeout:
+        ret = 124
+        log.error('FAILED - Application too long in error state')
+    except ConnectionClosed as e:
+        ret = 1
+        log.error('FAILED - Connection closed')
+        log_traceback(e)
     except JujuError as e:
-        log.info(str(e))
+        ret = 1
+        log.error('JujuError during deploy')
+        log_traceback(e)
     finally:
         # Disconnect from the api server and cleanup.
         await model.disconnect()
         await controller.disconnect()
-
-
-async def wait_until(model, deployed_app, log_time=5, timeout=None, wait_period=0.5, loop=None):
-    """Blocking with logs.
-
-    Return only after all conditions are true.
-
-    :param model: juju model
-    :param deployed_app: juju application
-    :param log_time: logging frequency (s)
-    :param timeout: blocking timeout (s)
-    :param wait_period: waiting time between checks (s)
-    :param loop: asyncio event loop
-    """
-    log_count = 0
-
-    def _disconnected():
-        return not (model.is_connected() and model.connection().is_open)
-
-    async def _block(log_count):
-        while not _disconnected() and not all(a.status == 'active' for a in deployed_app):
-            await asyncio.sleep(wait_period, loop=loop)
-            log_count += 0.5
-            if log_count % log_time == 0:
-                d = defaultdict(int)
-                for a in deployed_app:
-                    d[a.status] += 1
-                log.info('[RUNNING] Machines: {} Apps: {} Stats: {}'.format(
-                    len(model.machines),
-                    len(model.applications),
-                    dict(d)
-                ))
-    await asyncio.wait_for(_block(log_count), timeout, loop=loop)
-
-    if _disconnected():
-            raise websockets.ConnectionClosed(1006, 'no reason')
-
-    d = defaultdict(int)
-    for a in deployed_app:
-        d[a.status] += 1
-    log.info('[DONE] Machines: {} Apps: {} Stats: {}'.format(
-        len(model.machines),
-        len(model.applications),
-        dict(d)
-    ))
+    return ret

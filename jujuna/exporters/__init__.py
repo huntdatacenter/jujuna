@@ -2,16 +2,21 @@
 
 import os
 import uuid
+import logging
 import async_timeout
+
+
+log = logging.getLogger('jujuna.tests.exporter')
 
 
 class Exporter():
     """Exporter context manager."""
 
-    def __init__(self, unit, exporter_name):
+    def __init__(self, unit, exporter_name, timeout=15):
         """Init exporter."""
         if exporter_name.endswith('.py'):
             raise Exception('Do not provide an extension')
+        self.timeout = timeout
         self.unit = unit
         self.full_path = os.path.dirname(os.path.realpath(__file__))
         self.exporter_local = os.path.join(self.full_path, exporter_name + '.py')
@@ -32,24 +37,31 @@ class Exporter():
 
     async def _load_exporter(self, unit, source, target, user='ubuntu'):
         """Upload exporter."""
-        async with async_timeout.timeout(15):
-            await unit.scp_to(
-                source,
-                target,
-                user=user
-            )
+        for i in range(3):
+            try:
+                async with async_timeout.timeout(self.timeout):
+                    await unit.scp_to(
+                        source,
+                        target,
+                        user=user
+                    )
+                break
+            except Exception as exc:
+                log.debug(exc)
 
     async def _unload_exporter(self, unit, target, user='ubuntu'):
         """Dispose of remote exporter."""
+        ret = None
         for i in range(3):
             try:
-                async with async_timeout.timeout(15):
-                    ret = await unit.run('rm {}'.format(target), timeout=10)
+                async with async_timeout.timeout(self.timeout):
+                    ret = await unit.run('rm {}'.format(target), timeout=self.timeout - 1)
                 break
-            except Exception as e:
+            except Exception as exc:
                 # Try 3 times, if it fails raise on last
-                if i == 2 and 'No such file' not in str(e):
-                    raise e
+                if i == 2 and 'No such file' not in str(exc):
+                    log.warning('Unload failed: {}'.format(str(exc)))
+                    log.debug(exc)
         # ret = await unit.run('rm /tmp/*.py', timeout=3)
         if (
             ret and ret.data and
@@ -57,4 +69,4 @@ class Exporter():
             ret.data['results']['Code'] != '0' and
             'No such file' not in ret.data['results']['Stderr']
         ):
-            raise Exception('Unload failed: ', ret.data['results']['Stderr'])
+            log.warn('Unload failed: {}'.format(ret.data['results']['Stderr']))

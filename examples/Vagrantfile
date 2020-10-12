@@ -1,0 +1,19 @@
+Vagrant.configure(2) do |config|
+  # Development box
+  config.vm.define "jujunadev" do |dev|
+    # Select the box
+    dev.vm.box = "bento/ubuntu-18.04"
+    # Run playbook
+    dev.vm.provision "ansible_local" do |ansible|
+      ansible.playbook = "vagrant.yaml"
+    end
+    dev.vm.provider "virtualbox" do |vbox|
+      vbox.memory = 4096
+      vbox.cpus = 2
+    end
+    # Forward SSH agent
+    # dev.ssh.forward_agent = true
+    # Setup shared project directory
+    # dev.vm.synced_folder "../", "/home/vagrant/dev"
+  end
+end
