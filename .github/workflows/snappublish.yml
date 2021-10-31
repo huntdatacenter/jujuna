@@ -33,8 +33,6 @@ jobs:
     - name: Build snap
       run: |
         sg lxd -c 'snapcraft --use-lxd'
-        export SNAP_PATH="jujuna_$(cat VERSION)_amd64.snap"
-        ls $SNAP_PATH
 
       # https://circleci.com/docs/2.0/build-publish-snap-packages/
     - name: Publish snap
