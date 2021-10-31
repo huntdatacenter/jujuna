@@ -1,0 +1,52 @@
+name: Upload Snap Package
+
+on: push
+# on:
+#   create:
+#     tags:
+#       - refs/tags/*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Set up lxd
+      run: |
+        sudo usermod --append --groups lxd $(whoami)
+        sudo su $(whoami) -c 'lxd init --auto'
+        sudo su $(whoami) -c 'lxc network set lxdbr0 ipv6.address none'
+    - name: Install Snapcraft
+      uses: samuelmeuli/action-snapcraft@v1
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install tox
+    - name: Render snapcraft config
+      run: |
+        export SNAPCRAFT_PROJECT_VERSION=$(cat VERSION)
+        envsubst < snap/snapcraft.yaml.tpl > snap/snapcraft.yaml
+        rm snap/snapcraft.yaml.tpl
+    - name: Build snap
+      run: |
+        sg lxd -c 'snapcraft --use-lxd'
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: jujuna
+        path: |
+          jujuna*.snap
+
+    # https://circleci.com/docs/2.0/build-publish-snap-packages/
+    # - name: Publish snap
+    #   env:
+    #     SNAPCRAFT_LOGIN_FILE: ${{ secrets.SNAPCRAFT_TOKEN }}
+    #   run: |
+    #     mkdir .snapcraft
+    #     echo $SNAPCRAFT_LOGIN_FILE | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
+    #     snapcraft push *.snap --release edge
+    #   # [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && snapcraft push *.snap --release edge || echo "not publishing"
+    #   shell: bash

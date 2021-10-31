@@ -1,4 +1,6 @@
 
+snap/snapcraft.yaml
+
 .vagrant
 vagrant.retry
 

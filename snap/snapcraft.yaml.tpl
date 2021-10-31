@@ -1,5 +1,5 @@
 name: jujuna
-base: core18
+base: core20
 version: "${SNAPCRAFT_PROJECT_VERSION}"
 summary: Jujuna, continuous deployment, upgrade and testing for Juju.
 description: |
@@ -11,8 +11,8 @@ confinement: strict
 parts:
   jujuna:
     plugin: python
-    python-version: python3
-    requirements: ./requirements.txt
+    requirements:
+      - ./requirements.txt
     source: .
 apps:
   jujuna:
