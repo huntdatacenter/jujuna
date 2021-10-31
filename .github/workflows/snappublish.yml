@@ -10,11 +10,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python
-      uses: actions/setup-python@v1
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
       with:
         python-version: '3.8'
+    - name: Set up lxd
+      run: |
+        sudo usermod --append --groups lxd $(whoami)
+        sudo su $(whoami) -c 'lxd init --auto'
+        sudo su $(whoami) -c 'lxc network set lxdbr0 ipv6.address none'
     - name: Install Snapcraft
       uses: samuelmeuli/action-snapcraft@v1
     - name: Install dependencies
@@ -28,7 +32,7 @@ jobs:
         rm snap/snapcraft.yaml.tpl
     - name: Build snap
       run: |
-        snapcraft
+        sg lxd -c 'snapcraft --use-lxd'
         export SNAP_PATH="jujuna_$(cat VERSION)_amd64.snap"
         ls $SNAP_PATH
 
