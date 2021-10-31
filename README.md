@@ -1,8 +1,8 @@
 # Jujuna
 
-[![Build Status](https://travis-ci.org/huntdatacenter/jujuna.svg?branch=master)](https://travis-ci.org/huntdatacenter/jujuna)
-[![Documentation Status](https://readthedocs.org/projects/jujuna/badge/?version=latest)](https://jujuna.readthedocs.io/en/latest/?badge=latest)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jujuna.svg)](https://pypi.org/project/jujuna/)
+![Build Status](https://github.com/huntdatacenter/jujuna/actions/workflows/pythonpackage.yml/badge.svg?branch=master)
+![Documentation Status](https://readthedocs.org/projects/jujuna/badge/?version=latest)](https://jujuna.readthedocs.io/en/latest/?badge=latest)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jujuna.svg)](https://pypi.org/project/jujuna/)
 
 Continuous deployment, upgrade and testing for Juju.
 
