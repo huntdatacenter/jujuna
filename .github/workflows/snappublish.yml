@@ -36,9 +36,11 @@ jobs:
 
       # https://circleci.com/docs/2.0/build-publish-snap-packages/
     - name: Publish snap
+      env:
+        SNAPCRAFT_LOGIN_FILE: ${{ secrets.SNAPCRAFT_TOKEN }}
       run: |
         mkdir .snapcraft
-        echo $SNAPCRAFT_TOKEN | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
+        echo $SNAPCRAFT_LOGIN_FILE | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
         snapcraft push *.snap --release edge
       # [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && snapcraft push *.snap --release edge || echo "not publishing"
       shell: bash
