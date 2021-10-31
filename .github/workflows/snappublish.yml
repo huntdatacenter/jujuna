@@ -1,9 +1,9 @@
 name: Upload Snap Package
 
-on:
-  create:
-    tags:
-      - refs/tags/*
+# on:
+#   create:
+#     tags:
+#       - refs/tags/*
 
 jobs:
   deploy:
@@ -36,7 +36,11 @@ jobs:
         name: jujuna.snap
         path: ${{ env.SNAP_PATH }}
 
+      # https://circleci.com/docs/2.0/build-publish-snap-packages/
     - name: Publish snap
       run: |
-        [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && echo "upload snap" || echo "not publishing"
+        mkdir .snapcraft
+        echo $SNAPCRAFT_TOKEN | base64 --decode --ignore-garbage > .snapcraft/snapcraft.cfg
+        snapcraft push *.snap --release edge
+      # [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && snapcraft push *.snap --release edge || echo "not publishing"
       shell: bash
