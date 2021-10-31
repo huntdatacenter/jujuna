@@ -1,0 +1,42 @@
+name: Upload Snap Package
+
+on:
+  create:
+    tags:
+      - refs/tags/*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.8'
+    - name: Install Snapcraft
+      uses: samuelmeuli/action-snapcraft@v1
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install tox
+    - name: Render snapcraft config
+      run: |
+        export SNAPCRAFT_PROJECT_VERSION=$(cat VERSION)
+        envsubst < snap/snapcraft.yaml.tpl > snap/snapcraft.yaml
+        rm snap/snapcraft.yaml.tpl
+    - name: Build snap
+      run: |
+        sg lxd -c 'snapcraft --use-lxd'
+        export SNAP_PATH="jujuna_$(cat VERSION)_amd64.snap"
+        ls $SNAP_PATH
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: jujuna.snap
+        path: ${{ env.SNAP_PATH }}
+
+    - name: Publish snap
+      run: |
+        [[ "${GITHUB_REF}" =~ refs/tags/$(cat VERSION) ]] && echo "upload snap" || echo "not publishing"
+      shell: bash
