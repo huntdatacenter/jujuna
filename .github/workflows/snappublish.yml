@@ -36,11 +36,6 @@ jobs:
         export SNAP_PATH="jujuna_$(cat VERSION)_amd64.snap"
         ls $SNAP_PATH
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: jujuna.snap
-        path: ${{ env.SNAP_PATH }}
-
       # https://circleci.com/docs/2.0/build-publish-snap-packages/
     - name: Publish snap
       run: |
