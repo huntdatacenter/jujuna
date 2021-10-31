@@ -1,5 +1,6 @@
 name: Upload Snap Package
 
+on: push
 # on:
 #   create:
 #     tags:
