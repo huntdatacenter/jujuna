@@ -28,7 +28,7 @@ jobs:
         rm snap/snapcraft.yaml.tpl
     - name: Build snap
       run: |
-        sg lxd -c 'snapcraft --use-lxd'
+        snapcraft
         export SNAP_PATH="jujuna_$(cat VERSION)_amd64.snap"
         ls $SNAP_PATH
 
