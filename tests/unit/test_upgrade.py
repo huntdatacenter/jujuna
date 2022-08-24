@@ -97,7 +97,7 @@ class TestUpgrade(TestCase):
         app1.upgrade_charm.mock.assert_called_once_with(revision=12)
         app2.upgrade_charm.mock.assert_called_once_with(revision=None)
         wait_until.mock.assert_called_once_with(
-            model, list(model.applications.values()), loop=None, timeout=1800
+            model, list(model.applications.values()), timeout=1800
         )
 
     @patch('asyncio.sleep', new=AsyncMock())
