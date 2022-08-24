@@ -2,7 +2,11 @@ FROM python:3.8-slim-bullseye
 
 LABEL description="Install jujuna and its dependencies."
 
-RUN apt-get update && apt-get install -y gettext-base && rm -rf /var/lib/apt/lists/*
+RUN set -x \
+    && apt-get update \
+    && apt-get install -y \
+        gettext-base make \
+    && rm -rf /var/lib/apt/lists/*
 
 # Building container with jujuna command:
 # docker build -t hunt/jujuna:0.1.0 -t hunt/jujuna:latest .
