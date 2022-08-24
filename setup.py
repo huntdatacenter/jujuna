@@ -44,7 +44,7 @@ SETUP = {
     ],
     'extras_require': {
         ":python_version>'3.5.2'": [
-            'juju>=2.9.7,<2.10.0',
+            'juju==2.9.7',
             'pyyaml>=5.1.2,<=6.0.0',
         ],
         ":python_version<='3.5.2'": [
