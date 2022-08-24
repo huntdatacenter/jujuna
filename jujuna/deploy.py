@@ -40,7 +40,7 @@ async def deploy(
     """
     ret = 0
     log.info('Reading bundle: {}'.format(bundle_file.name))
-    entity_url = 'local:' + bundle_file.name.replace('/bundle.yaml', '')
+    entity_url = 'local:{}'.format(bundle_file.name.replace('/bundle.yaml', ''))
 
     controller, model = await connect_juju(
         ctrl_name,
@@ -65,7 +65,6 @@ async def deploy(
                 model,
                 deployed_apps,
                 log,
-                loop=model.loop,
                 error_timeout=error_timeout
             )
         else:

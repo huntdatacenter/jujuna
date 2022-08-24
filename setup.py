@@ -32,19 +32,20 @@ SETUP = {
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX :: Linux",
         "Environment :: Console"
     ],
     'install_requires': [
-        'async-timeout<4.0.0,>=2.0.1',
-        'argcomplete==1.10.0',
-        'theblues<1.0.0,>=0.5.2'
+        'async-timeout>=2.0.1,<4.0.0',
+        'argcomplete>=1.10.0,<2.0.0',
+        'theblues>=0.5.2,<1.0'
     ],
     'extras_require': {
         ":python_version>'3.5.2'": [
-            'juju<2.9.0,>=2.8.0',
-            'pyyaml<6.0,>=3.0',
+            'juju>=2.9.7,<2.10.0',
+            'pyyaml>=5.1.2,<=6.0.0',
         ],
         ":python_version<='3.5.2'": [
             'juju<1.0.0,>=0.11.7',

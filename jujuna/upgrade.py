@@ -10,6 +10,7 @@ from jujuna.helper import cs_name_parse, connect_juju, log_traceback
 from jujuna.settings import ORIGIN_KEYS, SERVICES
 
 from juju.errors import JujuError
+from juju import jasyncio
 
 
 # create logger
@@ -145,7 +146,6 @@ async def ocata_relation_patch(model, dry_run, cinder_ceph):
                 model,
                 model.applications.values(),
                 timeout=1800,
-                loop=model.loop
             )
             log.info('Completed addition of relation')
         except Exception as e:
@@ -207,7 +207,6 @@ async def upgrade_services(model, upgraded, origin, origin_keys, upgrade_action,
             model,
             model.applications.values(),
             timeout=1800,
-            loop=model.loop
         )
 
     sl_after = get_service_list(model, upgraded)
@@ -296,7 +295,6 @@ async def upgrade_charms(model, apps, dry_run, ignore_errors):
             model,
             list(model.applications.values()),
             timeout=1800,
-            loop=model.loop
         )
 
     log.info('Collecting final workload status')
@@ -332,6 +330,9 @@ async def wait_until(model, apps, log_time=10, timeout=None, wait_period=0.5, lo
     :param loop: asyncio event loop
     """
     log_count = 0
+
+    if not loop:
+        loop = jasyncio.get_running_loop()
 
     def _disconnected():
         return not (model.is_connected() and model.connection().is_open)

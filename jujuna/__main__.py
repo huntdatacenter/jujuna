@@ -6,7 +6,7 @@ import argparse
 import argcomplete
 import async_timeout
 
-from juju import loop
+from juju import jasyncio
 
 from jujuna.helper import log_traceback
 
@@ -201,7 +201,7 @@ def main():
     action, timeout, args = parse_args(sys.argv[1:])
 
     try:
-        ret = loop.run(
+        ret = jasyncio.run(
             run_action(action, timeout, args)
         )
     except Exception as e:
