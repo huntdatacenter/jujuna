@@ -1,7 +1,7 @@
 pip>=19
-pyyaml<6.0.0,>=5.1.2
+pyyaml>=5.1.2,<=6.0.0
 async-timeout<4.0.0,>=2.0.1
 tox>=3.14.1
-juju<2.9.0,>=2.8.4
-argcomplete==1.10.0
-theblues<1.0,>=0.5.2
+juju>=2.9.7,<2.10.0
+argcomplete>=1.10.0,<2.0.0
+theblues>=0.5.2,<1.0

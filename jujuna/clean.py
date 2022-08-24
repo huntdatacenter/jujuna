@@ -6,6 +6,7 @@ import logging
 from jujuna.helper import connect_juju, log_traceback
 from juju.errors import JujuError
 from juju.client import client
+from juju import jasyncio
 
 
 # create logger
@@ -17,6 +18,9 @@ async def wait_until(model, *conditions, log_time=5, timeout=None, wait_period=0
 
     """
     log_count = 0
+
+    if not loop:
+        loop = jasyncio.get_running_loop()
 
     def _disconnected():
         return not (model.is_connected() and model.connection().is_open)
@@ -110,7 +114,6 @@ async def clean(
             await wait_until(
                 model,
                 lambda: model.applications == {} and model.machines == {},
-                loop=model.loop
             )
 
     except JujuError as e:

@@ -8,6 +8,7 @@ from jujuna.settings import MAX_FRAME_SIZE
 
 from juju.controller import Controller
 from juju.model import Model
+from juju import jasyncio
 
 from theblues.charmstore import CharmStore
 
@@ -101,6 +102,9 @@ async def wait_until(model, apps, logger, log_time=5, timeout=None, wait_period=
     :param loop: asyncio event loop
     """
     log_count = 0
+
+    if not loop:
+        loop = jasyncio.get_running_loop()
 
     def _disconnected():
         return not (model.is_connected() and model.connection().is_open)
